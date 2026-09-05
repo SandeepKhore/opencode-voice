@@ -1,0 +1,32 @@
+{
+  "name": "opencode-voice",
+  "version": "0.1.0",
+  "description": "Voice input plugin for OpenCode — speak your coding instructions",
+  "main": "src/index.ts",
+  "type": "module",
+  "scripts": {
+    "build": "bun build src/index.ts --outdir dist --target bun",
+    "test": "bun test",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@deepgram/sdk": "^5.0.0",
+    "node-record-lpcm16": "^1.0.1",
+    "node-global-key-listener": "^0.3.0"
+  },
+  "devDependencies": {
+    "@opencode-ai/plugin": "latest",
+    "@types/bun": "latest",
+    "typescript": "^5.5.0"
+  },
+  "peerDependencies": {
+    "@opencode-ai/plugin": "*"
+  },
+  "keywords": [
+    "opencode",
+    "voice",
+    "speech-to-text",
+    "plugin"
+  ],
+  "license": "MIT"
+}
