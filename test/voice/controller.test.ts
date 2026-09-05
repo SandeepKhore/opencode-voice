@@ -153,6 +153,11 @@ describe("VoiceController", () => {
     //  but verifying unsubscribe mechanism works)
     expect(states).toHaveLength(0);
   });
+
+  test("toggle method exists and starts from idle", async () => {
+    expect(typeof controller.toggle).toBe("function");
+    expect(controller.state).toBe("idle");
+  });
 });
 
 describe("VoiceController - transcript handling", () => {

@@ -189,6 +189,22 @@ export class VoiceController {
   }
 
   /**
+   * Toggle recording state.
+   * - If idle, starts recording.
+   * - If recording, stops and finalizes.
+   * - If starting or finalizing, cancels.
+   */
+  async toggle(apiKey = ""): Promise<void> {
+    if (this.state === "idle") {
+      await this.startWithApiKey(apiKey);
+    } else if (this.state === "recording") {
+      await this.stop();
+    } else {
+      await this.cancel();
+    }
+  }
+
+  /**
    * Stop recording and finalize transcript.
    *
    * Flow: RECORDING → FINALIZING → wait for final → READY → insert → IDLE

@@ -82,7 +82,12 @@ OpenCode can resolve plugins from **npm**, a **local file path**, or **GitHub**:
 
 ## ⌨️ How to Use
 
-### Push-to-Talk Mode (Default)
+### 1. Slash Command (`/voice`)
+Simply type **`/voice`** in OpenCode:
+- **First `/voice`**: Starts recording (listening to your microphone).
+- **Second `/voice`**: Stops recording, transcribes your speech, and appends the final text to your OpenCode prompt editor.
+
+### 2. Hotkey Push-to-Talk (Optional)
 - **Hold `ctrl+space`**: Start speaking your prompt.
 - **Release `ctrl+space`**: Recording stops, transcript finalizes and inserts into your prompt window.
 

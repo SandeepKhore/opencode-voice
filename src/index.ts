@@ -13,7 +13,7 @@
  *   5. Review transcript in prompt, press Enter
  */
 
-import type { Plugin } from "@opencode-ai/plugin";
+import { tool, type Plugin } from "@opencode-ai/plugin";
 import { loadConfig } from "./config/loader";
 import { createSTTProvider } from "./stt/stt-factory";
 import { OpenCodeAdapter, type OpenCodeClient } from "./opencode/integration";
@@ -96,9 +96,21 @@ export const VoiceInputPlugin: Plugin = async (ctx) => {
     );
   }
 
-  // ── Plugin hooks ───────────────────────────────────────────
+  // ── Plugin hooks & tools ───────────────────────────────────
+
+  const voiceTool = tool({
+    description: "Start or stop voice input recording (/voice)",
+    args: {},
+    execute: async () => {
+      await controller.toggle(resolvedConfig.apiKey);
+      return `Voice recording ${controller.state === "recording" ? "started" : "stopped"}`;
+    },
+  });
 
   return {
+    tool: {
+      voice: voiceTool,
+    },
     event: async ({ event }) => {
       // Clean up when session ends
       if (
