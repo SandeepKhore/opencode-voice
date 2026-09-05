@@ -170,6 +170,8 @@ export class VoiceController {
         sampleRate: this.config.audio.sampleRate,
         interimResults: this.config.stt.interimResults,
         apiKey,
+        whisperPath: this.config.stt.whisperPath,
+        modelPath: this.config.stt.modelPath,
       });
 
       this.recorder.start(

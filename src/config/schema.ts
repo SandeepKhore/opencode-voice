@@ -8,13 +8,13 @@
 
 export type VoiceMode = "push-to-talk" | "toggle";
 
-export type STTProviderName = "deepgram";
+export type STTProviderName = "deepgram" | "whispercpp";
 
 export interface STTConfig {
-  /** Which provider to use. V1 only supports "deepgram". */
+  /** Which provider to use: "deepgram" or "whispercpp". */
   readonly provider: STTProviderName;
 
-  /** Provider model identifier. */
+  /** Provider model identifier (or GGML model name for Whisper). */
   readonly model: string;
 
   /** BCP-47 language code. */
@@ -22,6 +22,12 @@ export interface STTConfig {
 
   /** Whether to receive interim (partial) transcription results. */
   readonly interimResults: boolean;
+
+  /** Path to whisper-cli / main binary when provider is "whispercpp". */
+  readonly whisperPath?: string;
+
+  /** Path to GGML model .bin file when provider is "whispercpp". */
+  readonly modelPath?: string;
 }
 
 export interface AudioConfig {

@@ -24,6 +24,12 @@ export interface STTOptions {
 
   /** Provider API key. */
   readonly apiKey: string;
+
+  /** Path to whisper-cli binary (for whispercpp provider). */
+  readonly whisperPath?: string;
+
+  /** Path to GGML model bin (for whispercpp provider). */
+  readonly modelPath?: string;
 }
 
 /**

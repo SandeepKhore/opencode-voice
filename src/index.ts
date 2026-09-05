@@ -15,7 +15,7 @@
 
 import type { Plugin } from "@opencode-ai/plugin";
 import { loadConfig } from "./config/loader";
-import { DeepgramProvider } from "./stt/deepgram-provider";
+import { createSTTProvider } from "./stt/stt-factory";
 import { OpenCodeAdapter, type OpenCodeClient } from "./opencode/integration";
 import { VoiceController } from "./voice/voice-controller";
 import { HotkeyManager } from "./hotkey/hotkey-manager";
@@ -58,7 +58,7 @@ export const VoiceInputPlugin: Plugin = async (ctx) => {
 
   // ── Initialize modules ─────────────────────────────────────
 
-  const stt = new DeepgramProvider();
+  const stt = createSTTProvider(resolvedConfig.voice.stt.provider);
   const opencode = new OpenCodeAdapter(
     client,
     ctx.$ as (

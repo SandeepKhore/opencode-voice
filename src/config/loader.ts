@@ -79,6 +79,18 @@ function readEnvOverrides(): Partial<VoiceConfig> {
       language: env.VOICE_STT_LANGUAGE,
     };
   }
+  if (env.WHISPER_PATH !== undefined) {
+    overrides.stt = {
+      ...(overrides.stt as typeof DEFAULT_CONFIG.stt ?? DEFAULT_CONFIG.stt),
+      whisperPath: env.WHISPER_PATH,
+    };
+  }
+  if (env.WHISPER_MODEL_PATH !== undefined) {
+    overrides.stt = {
+      ...(overrides.stt as typeof DEFAULT_CONFIG.stt ?? DEFAULT_CONFIG.stt),
+      modelPath: env.WHISPER_MODEL_PATH,
+    };
+  }
 
   return overrides as Partial<VoiceConfig>;
 }
@@ -110,11 +122,17 @@ function getApiKeyEnvVar(provider: STTProviderName): string {
   switch (provider) {
     case "deepgram":
       return "DEEPGRAM_API_KEY";
+    case "whispercpp":
+      return "";
     default:
       return `${String(provider).toUpperCase()}_API_KEY`;
   }
 }
 
 function resolveApiKey(provider: STTProviderName): string {
-  return process.env[getApiKeyEnvVar(provider)] ?? "";
+  if (provider === "whispercpp") {
+    return "local"; // Local provider does not require a cloud API key
+  }
+  const envVar = getApiKeyEnvVar(provider);
+  return envVar ? process.env[envVar] ?? "" : "local";
 }
