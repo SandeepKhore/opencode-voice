@@ -2,8 +2,13 @@
   "name": "opencode-voice",
   "version": "0.1.0",
   "description": "Voice input plugin for OpenCode — speak your coding instructions",
-  "main": "src/index.ts",
+  "main": "./dist/index.js",
   "type": "module",
+  "exports": {
+    ".": { "import": "./dist/index.js" },
+    "./server": { "import": "./dist/index.js" }
+  },
+  "files": ["dist", "README.md", "LICENSE"],
   "scripts": {
     "build": "tsc",
     "test": "tsx --test test/**/*.test.ts",
