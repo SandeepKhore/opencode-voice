@@ -73,7 +73,7 @@ OpenCode can resolve plugins from **npm**, a **local file path**, or **GitHub**:
 ### Option C: Directly from GitHub
 ```json
 {
-  "plugin": ["github:your-username/opencode-voice"]
+  "plugin": ["github:sandeepkhore/opencode-voice#main"]
 }
 ```
 *OpenCode fetches the repository directly from GitHub.*
