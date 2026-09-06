@@ -2,8 +2,10 @@
  * Tests for the voice state machine (VoiceController).
  */
 
-import { describe, test, expect, beforeEach } from "bun:test";
+import { describe, test, beforeEach } from "node:test";
+import assert from "node:assert/strict";
 import { VoiceController } from "../../src/voice/voice-controller";
+import { createSession, getDisplayTranscript, getFinalTranscript } from "../../src/voice/voice-session";
 import type { STTProvider, STTOptions } from "../../src/stt/stt-provider";
 import type { STTEvent } from "../../src/stt/stt-events";
 import type { OpenCodeInput } from "../../src/opencode/integration";
@@ -119,13 +121,13 @@ describe("VoiceController", () => {
   });
 
   test("initial state is idle", () => {
-    expect(controller.state).toBe("idle");
-    expect(controller.currentSession).toBeNull();
+    assert.strictEqual(controller.state, "idle");
+    assert.strictEqual(controller.currentSession, null);
   });
 
   test("cancel from idle is a no-op", async () => {
     await controller.cancel();
-    expect(controller.state).toBe("idle");
+    assert.strictEqual(controller.state, "idle");
   });
 
   test("state change listeners are called", async () => {
@@ -137,7 +139,7 @@ describe("VoiceController", () => {
     // We can't fully test start() without a real recorder,
     // but we can verify the state machine transitions
     // by testing cancel from different states
-    expect(controller.state).toBe("idle");
+    assert.strictEqual(controller.state, "idle");
   });
 
   test("unsubscribe removes listener", () => {
@@ -151,12 +153,12 @@ describe("VoiceController", () => {
     // After unsubscribe, listener should not be called
     // (can't easily trigger state change without recorder,
     //  but verifying unsubscribe mechanism works)
-    expect(states).toHaveLength(0);
+    assert.strictEqual(states.length, 0);
   });
 
   test("toggle method exists and starts from idle", async () => {
-    expect(typeof controller.toggle).toBe("function");
-    expect(controller.state).toBe("idle");
+    assert.strictEqual(typeof controller.toggle, "function");
+    assert.strictEqual(controller.state, "idle");
   });
 });
 
@@ -166,56 +168,53 @@ describe("VoiceController - transcript handling", () => {
   // a real microphone
 
   test("partial events replace interim, don't duplicate", () => {
-    const { createSession, getDisplayTranscript } = require("../../src/voice/voice-session");
     const session = createSession();
     session.state = "recording";
 
     // Simulate partial events
     session.partialTranscript = "create";
-    expect(getDisplayTranscript(session)).toBe("create");
+    assert.strictEqual(getDisplayTranscript(session), "create");
 
     session.partialTranscript = "create a user";
-    expect(getDisplayTranscript(session)).toBe("create a user");
+    assert.strictEqual(getDisplayTranscript(session), "create a user");
 
     // NOT "create create a user" (no duplication)
   });
 
   test("final events move to confirmed parts", () => {
-    const { createSession, getDisplayTranscript, getFinalTranscript } =
-      require("../../src/voice/voice-session");
     const session = createSession();
     session.state = "recording";
 
     session.finalParts.push("create a user endpoint");
     session.partialTranscript = "";
 
-    expect(getDisplayTranscript(session)).toBe("create a user endpoint");
-    expect(getFinalTranscript(session)).toBe("create a user endpoint");
+    assert.strictEqual(getDisplayTranscript(session), "create a user endpoint");
+    assert.strictEqual(getFinalTranscript(session), "create a user endpoint");
   });
 
   test("full streaming simulation", () => {
-    const { createSession, getDisplayTranscript, getFinalTranscript } =
-      require("../../src/voice/voice-session");
     const session = createSession();
 
     // Partials
     session.partialTranscript = "create";
-    expect(getDisplayTranscript(session)).toBe("create");
+    assert.strictEqual(getDisplayTranscript(session), "create");
 
     session.partialTranscript = "create an endpoint";
-    expect(getDisplayTranscript(session)).toBe("create an endpoint");
+    assert.strictEqual(getDisplayTranscript(session), "create an endpoint");
 
     session.partialTranscript = "create an endpoint that supports";
-    expect(getDisplayTranscript(session)).toBe("create an endpoint that supports");
+    assert.strictEqual(getDisplayTranscript(session), "create an endpoint that supports");
 
     // Final arrives
     session.finalParts.push("create an endpoint that supports pagination and filtering.");
     session.partialTranscript = "";
 
-    expect(getDisplayTranscript(session)).toBe(
+    assert.strictEqual(
+      getDisplayTranscript(session),
       "create an endpoint that supports pagination and filtering.",
     );
-    expect(getFinalTranscript(session)).toBe(
+    assert.strictEqual(
+      getFinalTranscript(session),
       "create an endpoint that supports pagination and filtering.",
     );
   });

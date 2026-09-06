@@ -2,64 +2,65 @@
  * Tests for voice status display.
  */
 
-import { describe, test, expect } from "bun:test";
+import { describe, test } from "node:test";
+import assert from "node:assert/strict";
 import { getStatusDisplay } from "../../src/ui/voice-status";
 
 describe("getStatusDisplay", () => {
   test("idle returns null (no display)", () => {
-    expect(getStatusDisplay("idle")).toBeNull();
+    assert.strictEqual(getStatusDisplay("idle"), null);
   });
 
   test("starting shows starting message", () => {
     const display = getStatusDisplay("starting");
-    expect(display).not.toBeNull();
-    expect(display!.message).toContain("Starting");
-    expect(display!.variant).toBe("info");
+    assert.notStrictEqual(display, null);
+    assert.ok(display!.message.includes("Starting"));
+    assert.strictEqual(display!.variant, "info");
   });
 
   test("recording shows listening with interim text", () => {
     const display = getStatusDisplay("recording", {
       interimText: "create a user endpoint",
     });
-    expect(display).not.toBeNull();
-    expect(display!.message).toContain("create a user endpoint");
-    expect(display!.variant).toBe("info");
+    assert.notStrictEqual(display, null);
+    assert.ok(display!.message.includes("create a user endpoint"));
+    assert.strictEqual(display!.variant, "info");
   });
 
   test("recording shows generic listening when no interim", () => {
     const display = getStatusDisplay("recording");
-    expect(display).not.toBeNull();
-    expect(display!.message).toContain("Listening");
-    expect(display!.variant).toBe("info");
+    assert.notStrictEqual(display, null);
+    assert.ok(display!.message.includes("Listening"));
+    assert.strictEqual(display!.variant, "info");
   });
 
   test("finalizing shows processing", () => {
     const display = getStatusDisplay("finalizing");
-    expect(display).not.toBeNull();
-    expect(display!.message).toContain("Processing");
-    expect(display!.variant).toBe("info");
+    assert.notStrictEqual(display, null);
+    assert.ok(display!.message.includes("Processing"));
+    assert.strictEqual(display!.variant, "info");
   });
 
   test("ready shows success", () => {
     const display = getStatusDisplay("ready");
-    expect(display).not.toBeNull();
-    expect(display!.message).toContain("ready");
-    expect(display!.variant).toBe("success");
+    assert.notStrictEqual(display, null);
+    assert.ok(display!.message.includes("ready"));
+    assert.strictEqual(display!.variant, "success");
   });
 
   test("error shows error message", () => {
     const display = getStatusDisplay("error", {
       errorMessage: "Microphone not found",
     });
-    expect(display).not.toBeNull();
-    expect(display!.message).toContain("Microphone not found");
-    expect(display!.variant).toBe("error");
+    assert.notStrictEqual(display, null);
+    assert.ok(display!.message.includes("Microphone not found"));
+    assert.strictEqual(display!.variant, "error");
   });
 
   test("error without message shows generic", () => {
     const display = getStatusDisplay("error");
-    expect(display).not.toBeNull();
-    expect(display!.message).toContain("failed");
-    expect(display!.variant).toBe("error");
+    assert.notStrictEqual(display, null);
+    assert.ok(display!.message.includes("failed"));
+    assert.strictEqual(display!.variant, "error");
   });
 });

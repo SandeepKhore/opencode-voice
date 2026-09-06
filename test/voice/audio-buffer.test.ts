@@ -2,7 +2,8 @@
  * Tests for the audio buffer.
  */
 
-import { describe, test, expect } from "bun:test";
+import { describe, test } from "node:test";
+import assert from "node:assert/strict";
 import { AudioBuffer } from "../../src/voice/audio-buffer";
 
 describe("AudioBuffer", () => {
@@ -12,9 +13,9 @@ describe("AudioBuffer", () => {
 
     buffer.push(chunk);
 
-    expect(buffer.length).toBe(1);
-    expect(buffer.size).toBe(4);
-    expect(buffer.getAll()).toHaveLength(1);
+    assert.strictEqual(buffer.length, 1);
+    assert.strictEqual(buffer.size, 4);
+    assert.strictEqual(buffer.getAll().length, 1);
   });
 
   test("accumulates multiple chunks", () => {
@@ -24,8 +25,8 @@ describe("AudioBuffer", () => {
     buffer.push(Buffer.from([3, 4, 5]));
     buffer.push(Buffer.from([6]));
 
-    expect(buffer.length).toBe(3);
-    expect(buffer.size).toBe(6);
+    assert.strictEqual(buffer.length, 3);
+    assert.strictEqual(buffer.size, 6);
   });
 
   test("drops oldest chunks when max bytes exceeded", () => {
@@ -35,9 +36,9 @@ describe("AudioBuffer", () => {
     buffer.push(Buffer.alloc(4)); // 8 bytes
     buffer.push(Buffer.alloc(4)); // 12 bytes > 10, drop oldest
 
-    expect(buffer.size).toBeLessThanOrEqual(10);
+    assert.ok(buffer.size <= 10);
     // Should have dropped the first chunk
-    expect(buffer.length).toBe(2);
+    assert.strictEqual(buffer.length, 2);
   });
 
   test("clear zeros out all chunks", () => {
@@ -47,14 +48,14 @@ describe("AudioBuffer", () => {
     buffer.push(chunk);
     buffer.clear();
 
-    expect(buffer.length).toBe(0);
-    expect(buffer.size).toBe(0);
+    assert.strictEqual(buffer.length, 0);
+    assert.strictEqual(buffer.size, 0);
 
     // Original chunk should be zeroed (security)
-    expect(chunk[0]).toBe(0);
-    expect(chunk[1]).toBe(0);
-    expect(chunk[2]).toBe(0);
-    expect(chunk[3]).toBe(0);
+    assert.strictEqual(chunk[0], 0);
+    assert.strictEqual(chunk[1], 0);
+    assert.strictEqual(chunk[2], 0);
+    assert.strictEqual(chunk[3], 0);
   });
 
   test("getAll returns a copy", () => {
@@ -62,11 +63,11 @@ describe("AudioBuffer", () => {
     buffer.push(Buffer.from([1]));
 
     const all = buffer.getAll();
-    expect(all).toHaveLength(1);
+    assert.strictEqual(all.length, 1);
 
     // Modifying the copy shouldn't affect the buffer
     all.pop();
-    expect(buffer.length).toBe(1);
+    assert.strictEqual(buffer.length, 1);
   });
 
   test("handles large number of small chunks", () => {
@@ -77,6 +78,6 @@ describe("AudioBuffer", () => {
     }
 
     // Should have bounded to ~1000 bytes
-    expect(buffer.size).toBeLessThanOrEqual(1000);
+    assert.ok(buffer.size <= 1000);
   });
 });

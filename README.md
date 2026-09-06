@@ -25,7 +25,7 @@ User releases Hotkey
 
 ## 🚀 Prerequisites
 
-1. **Bun runtime** (version 1.0+) installed on your machine.
+1. **Node.js** (version 18+) installed on your machine.
 2. **`sox` (Sound eXchange)** installed for microphone recording:
    ```bash
    # macOS
@@ -143,19 +143,19 @@ export WHISPER_MODEL_PATH="$HOME/.config/opencode/models/ggml-base.en.bin"
 
 ## 🧪 Running Tests & Type Checking
 
-Run unit test suite (63 tests):
+Run unit test suite (73 tests):
 ```bash
-bun test
+npm test
 ```
 
 Run TypeScript strict type check:
 ```bash
-bun x tsc --noEmit
+npm run typecheck
 ```
 
 Build production bundle:
 ```bash
-bun run build
+npm run build
 ```
 
 ---

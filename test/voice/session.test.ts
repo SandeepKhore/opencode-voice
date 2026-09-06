@@ -2,7 +2,8 @@
  * Tests for voice session and transcript handling.
  */
 
-import { describe, test, expect } from "bun:test";
+import { describe, test } from "node:test";
+import assert from "node:assert/strict";
 import {
   createSession,
   getDisplayTranscript,
@@ -14,21 +15,21 @@ describe("createSession", () => {
     const s1 = createSession();
     const s2 = createSession();
 
-    expect(s1.id).toBeTruthy();
-    expect(s2.id).toBeTruthy();
-    expect(s1.id).not.toBe(s2.id);
+    assert.ok(s1.id);
+    assert.ok(s2.id);
+    assert.notStrictEqual(s1.id, s2.id);
   });
 
   test("initial state is idle", () => {
     const session = createSession();
-    expect(session.state).toBe("idle");
+    assert.strictEqual(session.state, "idle");
   });
 
   test("initial transcripts are empty", () => {
     const session = createSession();
-    expect(session.finalParts).toEqual([]);
-    expect(session.partialTranscript).toBe("");
-    expect(session.finalTranscript).toBeUndefined();
+    assert.deepStrictEqual(session.finalParts, []);
+    assert.strictEqual(session.partialTranscript, "");
+    assert.strictEqual(session.finalTranscript, undefined);
   });
 
   test("has a startedAt timestamp", () => {
@@ -36,29 +37,29 @@ describe("createSession", () => {
     const session = createSession();
     const after = Date.now();
 
-    expect(session.startedAt).toBeGreaterThanOrEqual(before);
-    expect(session.startedAt).toBeLessThanOrEqual(after);
+    assert.ok(session.startedAt >= before);
+    assert.ok(session.startedAt <= after);
   });
 });
 
 describe("getDisplayTranscript", () => {
   test("returns empty string for fresh session", () => {
     const session = createSession();
-    expect(getDisplayTranscript(session)).toBe("");
+    assert.strictEqual(getDisplayTranscript(session), "");
   });
 
   test("returns partial transcript when no finals", () => {
     const session = createSession();
     session.partialTranscript = "create a user";
 
-    expect(getDisplayTranscript(session)).toBe("create a user");
+    assert.strictEqual(getDisplayTranscript(session), "create a user");
   });
 
   test("returns final parts when no interim", () => {
     const session = createSession();
     session.finalParts = ["create a user endpoint"];
 
-    expect(getDisplayTranscript(session)).toBe("create a user endpoint");
+    assert.strictEqual(getDisplayTranscript(session), "create a user endpoint");
   });
 
   test("combines final parts with current interim", () => {
@@ -66,7 +67,8 @@ describe("getDisplayTranscript", () => {
     session.finalParts = ["create a user endpoint"];
     session.partialTranscript = "with pagination";
 
-    expect(getDisplayTranscript(session)).toBe(
+    assert.strictEqual(
+      getDisplayTranscript(session),
       "create a user endpoint with pagination",
     );
   });
@@ -78,7 +80,8 @@ describe("getDisplayTranscript", () => {
       "with pagination",
     ];
 
-    expect(getDisplayTranscript(session)).toBe(
+    assert.strictEqual(
+      getDisplayTranscript(session),
       "create a user endpoint with pagination",
     );
   });
@@ -88,22 +91,23 @@ describe("getDisplayTranscript", () => {
 
     // Simulate streaming partial updates
     session.partialTranscript = "create";
-    expect(getDisplayTranscript(session)).toBe("create");
+    assert.strictEqual(getDisplayTranscript(session), "create");
 
     session.partialTranscript = "create a user";
-    expect(getDisplayTranscript(session)).toBe("create a user");
+    assert.strictEqual(getDisplayTranscript(session), "create a user");
 
     session.partialTranscript = "create a user endpoint";
-    expect(getDisplayTranscript(session)).toBe("create a user endpoint");
+    assert.strictEqual(getDisplayTranscript(session), "create a user endpoint");
 
     // Final arrives — move to confirmed, clear interim
     session.finalParts.push("create a user endpoint");
     session.partialTranscript = "";
-    expect(getDisplayTranscript(session)).toBe("create a user endpoint");
+    assert.strictEqual(getDisplayTranscript(session), "create a user endpoint");
 
     // New interim starts
     session.partialTranscript = "with pagination";
-    expect(getDisplayTranscript(session)).toBe(
+    assert.strictEqual(
+      getDisplayTranscript(session),
       "create a user endpoint with pagination",
     );
   });
@@ -114,7 +118,8 @@ describe("getFinalTranscript", () => {
     const session = createSession();
     session.finalParts = ["create a user endpoint", "with pagination"];
 
-    expect(getFinalTranscript(session)).toBe(
+    assert.strictEqual(
+      getFinalTranscript(session),
       "create a user endpoint with pagination",
     );
   });
@@ -124,6 +129,6 @@ describe("getFinalTranscript", () => {
     session.finalParts = ["draft text"];
     session.finalTranscript = "final override text";
 
-    expect(getFinalTranscript(session)).toBe("final override text");
+    assert.strictEqual(getFinalTranscript(session), "final override text");
   });
 });

@@ -2,7 +2,8 @@
  * Tests for STT provider factory.
  */
 
-import { describe, test, expect } from "bun:test";
+import { describe, test } from "node:test";
+import assert from "node:assert/strict";
 import { createSTTProvider } from "../../src/stt/stt-factory";
 import { DeepgramProvider } from "../../src/stt/deepgram-provider";
 import { WhisperCppProvider } from "../../src/stt/whispercpp-provider";
@@ -10,15 +11,18 @@ import { WhisperCppProvider } from "../../src/stt/whispercpp-provider";
 describe("createSTTProvider", () => {
   test("instantiates DeepgramProvider for 'deepgram'", () => {
     const provider = createSTTProvider("deepgram");
-    expect(provider).toBeInstanceOf(DeepgramProvider);
+    assert.ok(provider instanceof DeepgramProvider);
   });
 
   test("instantiates WhisperCppProvider for 'whispercpp'", () => {
     const provider = createSTTProvider("whispercpp");
-    expect(provider).toBeInstanceOf(WhisperCppProvider);
+    assert.ok(provider instanceof WhisperCppProvider);
   });
 
   test("throws error for unsupported provider name", () => {
-    expect(() => createSTTProvider("unsupported" as any)).toThrow("Unsupported STT provider");
+    assert.throws(
+      () => createSTTProvider("unsupported" as any),
+      { message: /Unsupported STT provider/ }
+    );
   });
 });

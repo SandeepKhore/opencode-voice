@@ -5,18 +5,19 @@
   "main": "src/index.ts",
   "type": "module",
   "scripts": {
-    "build": "bun build src/index.ts --outdir dist --target bun",
-    "test": "bun test",
+    "build": "tsc",
+    "test": "tsx --test test/**/*.test.ts",
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
     "@deepgram/sdk": "^5.0.0",
-    "node-record-lpcm16": "^1.0.1",
-    "node-global-key-listener": "^0.3.0"
+    "node-global-key-listener": "^0.3.0",
+    "node-record-lpcm16": "^1.0.1"
   },
   "devDependencies": {
     "@opencode-ai/plugin": "latest",
-    "@types/bun": "latest",
+    "@types/node": "^26.4.1",
+    "tsx": "^4.7.0",
     "typescript": "^5.5.0"
   },
   "peerDependencies": {

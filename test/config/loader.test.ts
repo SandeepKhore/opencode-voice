@@ -2,7 +2,8 @@
  * Tests for config loader.
  */
 
-import { describe, test, expect, beforeEach, afterEach } from "bun:test";
+import { describe, test, beforeEach, afterEach } from "node:test";
+import assert from "node:assert/strict";
 import { loadConfig } from "../../src/config/loader";
 import { DEFAULT_CONFIG } from "../../src/config/schema";
 
@@ -10,6 +11,16 @@ describe("loadConfig", () => {
   const originalEnv = { ...process.env };
 
   beforeEach(() => {
+    // Clear all voice-related env vars to ensure clean state
+    delete process.env.VOICE_ENABLED;
+    delete process.env.VOICE_MODE;
+    delete process.env.VOICE_HOTKEY;
+    delete process.env.VOICE_AUTO_SUBMIT;
+    delete process.env.VOICE_STT_PROVIDER;
+    delete process.env.VOICE_STT_MODEL;
+    delete process.env.VOICE_STT_LANGUAGE;
+    delete process.env.WHISPER_PATH;
+    delete process.env.WHISPER_MODEL_PATH;
     // Set required API key for most tests
     process.env.DEEPGRAM_API_KEY = "test-api-key";
   });
@@ -21,17 +32,17 @@ describe("loadConfig", () => {
 
   test("returns defaults when no overrides provided", () => {
     const config = loadConfig();
-    expect(config.voice).toEqual(DEFAULT_CONFIG);
-    expect(config.apiKey).toBe("test-api-key");
+    assert.deepStrictEqual(config.voice, DEFAULT_CONFIG);
+    assert.strictEqual(config.apiKey, "test-api-key");
   });
 
   test("merges explicit overrides with defaults", () => {
     const config = loadConfig({ mode: "toggle", hotkey: "cmd+shift+v" });
-    expect(config.voice.mode).toBe("toggle");
-    expect(config.voice.hotkey).toBe("cmd+shift+v");
+    assert.strictEqual(config.voice.mode, "toggle");
+    assert.strictEqual(config.voice.hotkey, "cmd+shift+v");
     // Other fields unchanged
-    expect(config.voice.stt.provider).toBe("deepgram");
-    expect(config.voice.audio.sampleRate).toBe(16000);
+    assert.strictEqual(config.voice.stt.provider, "deepgram");
+    assert.strictEqual(config.voice.audio.sampleRate, 16000);
   });
 
   test("environment variables override defaults", () => {
@@ -40,23 +51,26 @@ describe("loadConfig", () => {
     process.env.VOICE_AUTO_SUBMIT = "true";
 
     const config = loadConfig();
-    expect(config.voice.mode).toBe("toggle");
-    expect(config.voice.hotkey).toBe("ctrl+shift+space");
-    expect(config.voice.autoSubmit).toBe(true);
+    assert.strictEqual(config.voice.mode, "toggle");
+    assert.strictEqual(config.voice.hotkey, "ctrl+shift+space");
+    assert.strictEqual(config.voice.autoSubmit, true);
   });
 
   test("throws when API key is missing and plugin is enabled", () => {
     delete process.env.DEEPGRAM_API_KEY;
 
-    expect(() => loadConfig()).toThrow("DEEPGRAM_API_KEY");
+    assert.throws(
+      () => loadConfig(),
+      { message: /DEEPGRAM_API_KEY/ }
+    );
   });
 
   test("does not throw when API key is missing but plugin is disabled", () => {
     delete process.env.DEEPGRAM_API_KEY;
 
     const config = loadConfig({ enabled: false });
-    expect(config.voice.enabled).toBe(false);
-    expect(config.apiKey).toBe("");
+    assert.strictEqual(config.voice.enabled, false);
+    assert.strictEqual(config.apiKey, "");
   });
 
   test("env VOICE_ENABLED=false disables plugin", () => {
@@ -64,23 +78,23 @@ describe("loadConfig", () => {
     delete process.env.DEEPGRAM_API_KEY;
 
     const config = loadConfig();
-    expect(config.voice.enabled).toBe(false);
+    assert.strictEqual(config.voice.enabled, false);
   });
 
   test("STT model override via environment", () => {
     process.env.VOICE_STT_MODEL = "nova-2";
 
     const config = loadConfig();
-    expect(config.voice.stt.model).toBe("nova-2");
+    assert.strictEqual(config.voice.stt.model, "nova-2");
     // Other STT fields unchanged
-    expect(config.voice.stt.provider).toBe("deepgram");
-    expect(config.voice.stt.language).toBe("en");
+    assert.strictEqual(config.voice.stt.provider, "deepgram");
+    assert.strictEqual(config.voice.stt.language, "en");
   });
 
   test("STT language override via environment", () => {
     process.env.VOICE_STT_LANGUAGE = "es";
 
     const config = loadConfig();
-    expect(config.voice.stt.language).toBe("es");
+    assert.strictEqual(config.voice.stt.language, "es");
   });
 });

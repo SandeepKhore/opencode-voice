@@ -2,7 +2,8 @@
  * Tests for WhisperCppProvider and WAV buffer helper.
  */
 
-import { describe, test, expect } from "bun:test";
+import { describe, test } from "node:test";
+import assert from "node:assert/strict";
 import { WhisperCppProvider, createWavBuffer } from "../../src/stt/whispercpp-provider";
 
 describe("createWavBuffer", () => {
@@ -10,23 +11,23 @@ describe("createWavBuffer", () => {
     const pcmData = Buffer.from([0, 0, 10, 0, 20, 0]);
     const wav = createWavBuffer(pcmData, 16000, 1, 16);
 
-    expect(wav.length).toBe(44 + pcmData.length);
-    expect(wav.subarray(0, 4).toString("utf8")).toBe("RIFF");
-    expect(wav.subarray(8, 12).toString("utf8")).toBe("WAVE");
-    expect(wav.subarray(12, 16).toString("utf8")).toBe("fmt ");
-    expect(wav.subarray(36, 40).toString("utf8")).toBe("data");
+    assert.strictEqual(wav.length, 44 + pcmData.length);
+    assert.strictEqual(wav.subarray(0, 4).toString("utf8"), "RIFF");
+    assert.strictEqual(wav.subarray(8, 12).toString("utf8"), "WAVE");
+    assert.strictEqual(wav.subarray(12, 16).toString("utf8"), "fmt ");
+    assert.strictEqual(wav.subarray(36, 40).toString("utf8"), "data");
 
     // Check sample rate at offset 24 (16000 = 0x3E80)
-    expect(wav.readUInt32LE(24)).toBe(16000);
+    assert.strictEqual(wav.readUInt32LE(24), 16000);
     // Check data length at offset 40
-    expect(wav.readUInt32LE(40)).toBe(pcmData.length);
+    assert.strictEqual(wav.readUInt32LE(40), pcmData.length);
   });
 });
 
 describe("WhisperCppProvider", () => {
   test("initial state is not connected", () => {
     const provider = new WhisperCppProvider();
-    expect(provider.isConnected).toBe(false);
+    assert.strictEqual(provider.isConnected, false);
   });
 
   test("connect sets isConnected and emits connected event", async () => {
@@ -45,13 +46,16 @@ describe("WhisperCppProvider", () => {
       apiKey: "local",
     });
 
-    expect(provider.isConnected).toBe(true);
-    expect(connectedEmitted).toBe(true);
+    assert.strictEqual(provider.isConnected, true);
+    assert.strictEqual(connectedEmitted, true);
   });
 
   test("sendAudio throws when not connected", async () => {
     const provider = new WhisperCppProvider();
-    expect(provider.sendAudio(Buffer.from([0, 1]))).rejects.toThrow("not connected");
+    await assert.rejects(
+      () => provider.sendAudio(Buffer.from([0, 1])),
+      { message: /not connected/ }
+    );
   });
 
   test("finalize with empty audio emits empty final event", async () => {
@@ -76,8 +80,8 @@ describe("WhisperCppProvider", () => {
 
     await provider.finalize();
 
-    expect(finalReceived).toBe(true);
-    expect(finalText).toBe("");
+    assert.strictEqual(finalReceived, true);
+    assert.strictEqual(finalText, "");
   });
 
   test("disconnect clears state and emits disconnected", async () => {
@@ -98,7 +102,7 @@ describe("WhisperCppProvider", () => {
 
     await provider.disconnect();
 
-    expect(provider.isConnected).toBe(false);
-    expect(disconnectedEmitted).toBe(true);
+    assert.strictEqual(provider.isConnected, false);
+    assert.strictEqual(disconnectedEmitted, true);
   });
 });

@@ -2,7 +2,8 @@
  * Tests for the transcript aggregator.
  */
 
-import { describe, test, expect, beforeEach } from "bun:test";
+import { describe, test, beforeEach } from "node:test";
+import assert from "node:assert/strict";
 import { TranscriptAggregator } from "../../src/ui/transcript";
 
 describe("TranscriptAggregator", () => {
@@ -13,36 +14,37 @@ describe("TranscriptAggregator", () => {
   });
 
   test("initial state has no content", () => {
-    expect(aggregator.hasContent).toBe(false);
-    expect(aggregator.getDisplay()).toBe("");
-    expect(aggregator.getFinal()).toBe("");
+    assert.strictEqual(aggregator.hasContent, false);
+    assert.strictEqual(aggregator.getDisplay(), "");
+    assert.strictEqual(aggregator.getFinal(), "");
   });
 
   test("partial replaces, doesn't append", () => {
     aggregator.handlePartial("create");
-    expect(aggregator.getDisplay()).toBe("create");
+    assert.strictEqual(aggregator.getDisplay(), "create");
 
     aggregator.handlePartial("create a user");
-    expect(aggregator.getDisplay()).toBe("create a user");
+    assert.strictEqual(aggregator.getDisplay(), "create a user");
 
     aggregator.handlePartial("create a user endpoint");
-    expect(aggregator.getDisplay()).toBe("create a user endpoint");
+    assert.strictEqual(aggregator.getDisplay(), "create a user endpoint");
   });
 
   test("final moves to confirmed, clears interim", () => {
     aggregator.handlePartial("create a user endpoint");
     aggregator.handleFinal("create a user endpoint");
 
-    expect(aggregator.getDisplay()).toBe("create a user endpoint");
+    assert.strictEqual(aggregator.getDisplay(), "create a user endpoint");
     // The interim is cleared
-    expect(aggregator.getFinal()).toBe("create a user endpoint");
+    assert.strictEqual(aggregator.getFinal(), "create a user endpoint");
   });
 
   test("multiple finals are joined", () => {
     aggregator.handleFinal("create a user endpoint");
     aggregator.handleFinal("with pagination and filtering.");
 
-    expect(aggregator.getFinal()).toBe(
+    assert.strictEqual(
+      aggregator.getFinal(),
       "create a user endpoint with pagination and filtering.",
     );
   });
@@ -56,21 +58,22 @@ describe("TranscriptAggregator", () => {
     // final:   "Create an endpoint that supports pagination and filtering."
 
     aggregator.handlePartial("Create");
-    expect(aggregator.getDisplay()).toBe("Create");
+    assert.strictEqual(aggregator.getDisplay(), "Create");
 
     aggregator.handlePartial("Create an endpoint");
-    expect(aggregator.getDisplay()).toBe("Create an endpoint");
+    assert.strictEqual(aggregator.getDisplay(), "Create an endpoint");
 
     aggregator.handlePartial("Create an endpoint that");
-    expect(aggregator.getDisplay()).toBe("Create an endpoint that");
+    assert.strictEqual(aggregator.getDisplay(), "Create an endpoint that");
 
     aggregator.handlePartial("Create an endpoint that supports");
-    expect(aggregator.getDisplay()).toBe("Create an endpoint that supports");
+    assert.strictEqual(aggregator.getDisplay(), "Create an endpoint that supports");
 
     aggregator.handleFinal(
       "Create an endpoint that supports pagination and filtering.",
     );
-    expect(aggregator.getDisplay()).toBe(
+    assert.strictEqual(
+      aggregator.getDisplay(),
       "Create an endpoint that supports pagination and filtering.",
     );
 
@@ -85,28 +88,30 @@ describe("TranscriptAggregator", () => {
 
     // Second sentence
     aggregator.handlePartial("Use OAuth");
-    expect(aggregator.getDisplay()).toBe("Add a login page. Use OAuth");
+    assert.strictEqual(aggregator.getDisplay(), "Add a login page. Use OAuth");
 
     aggregator.handlePartial("Use OAuth for authentication");
-    expect(aggregator.getDisplay()).toBe(
+    assert.strictEqual(
+      aggregator.getDisplay(),
       "Add a login page. Use OAuth for authentication",
     );
 
     aggregator.handleFinal("Use OAuth for authentication.");
-    expect(aggregator.getFinal()).toBe(
+    assert.strictEqual(
+      aggregator.getFinal(),
       "Add a login page. Use OAuth for authentication.",
     );
   });
 
   test("empty partials and finals are handled gracefully", () => {
     aggregator.handlePartial("");
-    expect(aggregator.getDisplay()).toBe("");
+    assert.strictEqual(aggregator.getDisplay(), "");
 
     aggregator.handleFinal("");
-    expect(aggregator.getFinal()).toBe("");
+    assert.strictEqual(aggregator.getFinal(), "");
 
     aggregator.handleFinal("   ");
-    expect(aggregator.getFinal()).toBe("");
+    assert.strictEqual(aggregator.getFinal(), "");
   });
 
   test("reset clears all state", () => {
@@ -115,18 +120,18 @@ describe("TranscriptAggregator", () => {
 
     aggregator.reset();
 
-    expect(aggregator.hasContent).toBe(false);
-    expect(aggregator.getDisplay()).toBe("");
-    expect(aggregator.getFinal()).toBe("");
+    assert.strictEqual(aggregator.hasContent, false);
+    assert.strictEqual(aggregator.getDisplay(), "");
+    assert.strictEqual(aggregator.getFinal(), "");
   });
 
   test("hasContent is true after partial", () => {
     aggregator.handlePartial("hello");
-    expect(aggregator.hasContent).toBe(true);
+    assert.strictEqual(aggregator.hasContent, true);
   });
 
   test("hasContent is true after final", () => {
     aggregator.handleFinal("hello");
-    expect(aggregator.hasContent).toBe(true);
+    assert.strictEqual(aggregator.hasContent, true);
   });
 });
