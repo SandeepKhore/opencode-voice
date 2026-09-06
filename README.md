@@ -1,175 +1,171 @@
 # OpenCode Voice Plugin (`opencode-voice`)
 
-🎙 **Speak your coding instructions directly into OpenCode.**
+Speak your coding instructions directly into OpenCode.
 
-`opencode-voice` is a native voice-input plugin for OpenCode. It streams live audio from your microphone to Deepgram's Nova-2 Speech-to-Text API, displaying interim transcription toasts in real time, and appends the final text directly into your OpenCode prompt editor when you release the hotkey.
-
----
-
-## 📸 Overview
-
-```text
-User holds Hotkey (Ctrl+Space)
-      │
-      ├── 🎙 Recorder captures PCM audio from microphone (via sox)
-      ├── ⚡ Streams live audio chunks to Deepgram WebSocket
-      ├── 💬 Shows real-time interim transcription toast in TUI
-      │
-User releases Hotkey
-      │
-      ├── 🛑 Recorder stops & requests finalization from Deepgram
-      └── 📝 Final transcript appended to OpenCode prompt input
-```
+`opencode-voice` is a voice-input plugin for OpenCode. It captures audio from your microphone, transcribes it using Deepgram (cloud) or Whisper.cpp (local), and inserts the transcript into your prompt.
 
 ---
 
-## 🚀 Prerequisites
+## Quick Setup (Agent Instructions)
 
-1. **Node.js** (version 18+) installed on your machine.
-2. **`sox` (Sound eXchange)** installed for microphone recording:
-   ```bash
-   # macOS
-   brew install sox
+Run these commands to set up the voice plugin end-to-end:
 
-   # Ubuntu / Debian
-   sudo apt-get update && sudo apt-get install -y sox libsox-fmt-all
-   ```
-3. **Deepgram API Key**:
-   - Sign up for a free key at [deepgram.com](https://deepgram.com).
-   - Set the environment variable:
-     ```bash
-     export DEEPGRAM_API_KEY="your-deepgram-api-key"
-     ```
-4. **Permissions for Global Hotkeys**:
-   - **macOS**: Go to `System Settings -> Privacy & Security -> Accessibility` and grant permission to your terminal / IDE application.
-   - **Ubuntu / Linux**: Ensure your user account has access to input devices:
-     ```bash
-     sudo usermod -aG input $USER
-     ```
-     *(Note: log out and log back in for group changes to take effect).*
+### Step 1: Install Prerequisites
 
----
-
-## 📥 Installation & Setup
-
-OpenCode can resolve plugins from **npm**, a **local file path**, or **GitHub**:
-
-### Option A: Published npm package (default)
-```json
-{
-  "plugin": ["opencode-voice"]
-}
-```
-*OpenCode downloads `opencode-voice` from the npm registry.*
-
-### Option B: Local development / testing
-```json
-{
-  "plugin": ["./path/to/opencode-voice"]
-}
-```
-*OpenCode loads the plugin directly from your local directory.*
-
-### Option C: Directly from GitHub
-```json
-{
-  "plugin": ["github:sandeepkhore/opencode-voice#main"]
-}
-```
-*OpenCode fetches the repository directly from GitHub.*
-
----
-
-## ⌨️ How to Use
-
-### 1. Slash Command (`/voice`)
-Simply type **`/voice`** in OpenCode:
-- **First `/voice`**: Starts recording (listening to your microphone).
-- **Second `/voice`**: Stops recording, transcribes your speech, and appends the final text to your OpenCode prompt editor.
-
-### 2. Hotkey Push-to-Talk (Optional)
-- **Hold `ctrl+space`**: Start speaking your prompt.
-- **Release `ctrl+space`**: Recording stops, transcript finalizes and inserts into your prompt window.
-
-### Speech-to-Text Providers
-
-`opencode-voice` supports both **Cloud STT (Deepgram)** and **Local Offline STT (Whisper.cpp)**:
-
-#### Option 1: Deepgram (Cloud STT — Default)
-Set your Deepgram API Key:
-```bash
-export DEEPGRAM_API_KEY="your-deepgram-api-key"
-```
-
-#### Option 2: Whisper.cpp (Local Offline STT)
-1. Install `whisper-cpp`:
 ```bash
 # macOS
-brew install whisper-cpp
+brew install sox whisper-cpp
 
-# Ubuntu / Linux
-# Install whisper.cpp from package manager or build from https://github.com/ggerganov/whisper.cpp
+# Ubuntu / Debian
+sudo apt-get update && sudo apt-get install -y sox libsox-fmt-all
+# Install whisper.cpp from https://github.com/ggerganov/whisper.cpp
 ```
 
-2. Download a GGML model file (e.g. `ggml-base.en.bin` ~140 MB):
+### Step 2: Download Whisper Model
+
 ```bash
 mkdir -p ~/.config/opencode/models
 curl -L -o ~/.config/opencode/models/ggml-base.en.bin https://huggingface.co/ggerganov/whisper.cpp/resolve/main/ggml-base.en.bin
 ```
 
-3. Configure environment variables:
+### Step 3: Set Environment Variables
+
+Add these to your shell profile (`~/.zshrc`, `~/.bashrc`, or `~/.profile`):
+
 ```bash
+# Voice plugin - use local Whisper (no API key needed)
 export VOICE_STT_PROVIDER="whispercpp"
 export WHISPER_PATH="whisper-cli"
 export WHISPER_MODEL_PATH="$HOME/.config/opencode/models/ggml-base.en.bin"
+
+# OR use Deepgram cloud STT (requires API key)
+# export VOICE_STT_PROVIDER="deepgram"
+# export DEEPGRAM_API_KEY="your-deepgram-api-key"
 ```
 
-### Configuration Options
+Then reload your shell:
+```bash
+source ~/.zshrc  # or source ~/.bashrc
+```
 
-| Environment Variable | Default | Description |
-| -------------------- | ------- | ----------- |
-| `VOICE_STT_PROVIDER` | `deepgram` | STT Provider: `deepgram` or `whispercpp` |
-| `DEEPGRAM_API_KEY` | *(required for deepgram)* | Deepgram API key |
-| `WHISPER_PATH` | `whisper-cli` | Path to `whisper-cli` binary |
-| `WHISPER_MODEL_PATH` | `models/ggml-base.en.bin` | Path to GGML model file |
-| `VOICE_ENABLED` | `true` | Enable/disable the voice plugin |
-| `VOICE_MODE` | `push-to-talk` | Mode: `push-to-talk` or `toggle` |
-| `VOICE_HOTKEY` | `ctrl+space` | Hotkey combo (e.g. `ctrl+shift+v`, `cmd+shift+s`) |
-| `VOICE_AUTO_SUBMIT` | `false` | If `true`, automatically submits prompt on finalization |
-| `VOICE_STT_MODEL` | `nova-3` | Model identifier (`nova-3`, `ggml-base.en.bin`, etc.) |
-| `VOICE_STT_LANGUAGE`| `en` | STT language code (e.g., `en`, `es`, `fr`, `de`) |
+### Step 4: Configure OpenCode Plugin
+
+Add to your `~/.config/opencode/opencode.json` (global) or `.opencode/opencode.json` (project):
+
+```json
+{
+  "plugin": ["github:sandeepkhore/opencode-voice#main"]
+}
+```
+
+### Step 5: Grant Permissions (macOS only)
+
+Go to **System Settings > Privacy & Security > Accessibility** and grant permission to your terminal application.
+
+### Step 6: Restart OpenCode
+
+```bash
+opencode
+```
+
+Hold `Ctrl+Space` to speak, release to transcribe.
 
 ---
 
-## 🧪 Running Tests & Type Checking
+## Installation Options
 
-Run unit test suite (73 tests):
-```bash
-npm test
+### From GitHub (recommended)
+```json
+{
+  "plugin": ["github:sandeepkhore/opencode-voice#main"]
+}
 ```
 
-Run TypeScript strict type check:
-```bash
-npm run typecheck
+### From npm (when published)
+```json
+{
+  "plugin": ["opencode-voice"]
+}
 ```
 
-Build production bundle:
-```bash
-npm run build
+### Local development
+```json
+{
+  "plugin": ["./path/to/opencode-voice"]
+}
 ```
 
 ---
 
-## 🏗 Architecture
+## Usage
 
-- **`src/stt/`**: STT abstraction layer and Deepgram provider implementation.
-- **`src/voice/`**: Audio recorder (`sox`), bounded audio buffer, and state machine (`VoiceController`).
-- **`src/hotkey/`**: Global hotkey detection & debouncing.
-- **`src/opencode/`**: OpenCode prompt adapter & structured logging.
-- **`src/ui/`**: Transcript aggregator (using replacement model to prevent duplication) & toast renderer.
+### Hotkey (Push-to-Talk)
+- **Hold `Ctrl+Space`**: Start speaking
+- **Release `Ctrl+Space`**: Transcript inserts into prompt
+
+### Slash Command
+Type `/voice` in OpenCode:
+- First `/voice`: Start recording
+- Second `/voice`: Stop and transcribe
 
 ---
 
-## 📄 License
+## Speech-to-Text Providers
+
+### Option 1: Whisper.cpp (Local — Default, No API Key)
+Requires: `whisper-cpp` installed, model downloaded, environment variables set (see Quick Setup).
+
+### Option 2: Deepgram (Cloud)
+Requires: Deepgram API key.
+
+```bash
+export VOICE_STT_PROVIDER="deepgram"
+export DEEPGRAM_API_KEY="your-deepgram-api-key"
+```
+
+---
+
+## Configuration
+
+| Variable | Default | Description |
+|----------|---------|-------------|
+| `VOICE_STT_PROVIDER` | `deepgram` | `deepgram` or `whispercpp` |
+| `DEEPGRAM_API_KEY` | — | Deepgram API key (required for deepgram) |
+| `WHISPER_PATH` | `whisper-cli` | Path to whisper-cli binary |
+| `WHISPER_MODEL_PATH` | `models/ggml-base.en.bin` | Path to GGML model |
+| `VOICE_ENABLED` | `true` | Enable/disable plugin |
+| `VOICE_MODE` | `push-to-talk` | `push-to-talk` or `toggle` |
+| `VOICE_HOTKEY` | `ctrl+space` | Hotkey combo |
+| `VOICE_AUTO_SUBMIT` | `false` | Auto-submit on finalization |
+| `VOICE_STT_MODEL` | `nova-3` | Model identifier |
+| `VOICE_STT_LANGUAGE` | `en` | Language code (en, es, fr, de) |
+
+---
+
+## Troubleshooting
+
+**"sox is not installed"**
+```bash
+brew install sox  # macOS
+sudo apt-get install sox libsox-fmt-all  # Linux
+```
+
+**"whisper-cli binary not found"**
+```bash
+which whisper-cli  # Check if installed
+export WHISPER_PATH="$(which whisper-cli)"  # Set correct path
+```
+
+**"Microphone permission denied" (macOS)**
+System Settings > Privacy & Security > Accessibility > Enable for your terminal
+
+**Plugin not loading**
+- Check OpenCode logs for errors
+- Ensure environment variables are set: `echo $VOICE_STT_PROVIDER`
+- Verify model exists: `ls -la ~/.config/opencode/models/ggml-base.en.bin`
+
+---
+
+## License
 
 MIT
