@@ -69,9 +69,10 @@ export class Recorder {
       const stream = this.recording.stream();
       this.stream = stream;
 
-      stream.on("data", (chunk: Buffer) => {
+      stream.on("data", (chunk: Buffer | string) => {
         if (this._isRecording && this.onChunk) {
-          this.onChunk(chunk);
+          const buf = typeof chunk === "string" ? Buffer.from(chunk, "binary") : chunk;
+          this.onChunk(buf);
         }
       });
 

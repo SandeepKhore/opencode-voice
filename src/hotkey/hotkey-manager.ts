@@ -127,7 +127,18 @@ export class HotkeyManager {
     const keyName = String(event.name ?? (event.rawKey as any)?.standardName ?? "").toUpperCase();
     const expected = this.parsedHotkey;
 
-    // Check modifier keys
+    // For modifier-only hotkeys, check if this event IS the modifier key
+    if (!expected.key) {
+      const isCtrlEvent = expected.ctrl && (keyName === "LEFT CTRL" || keyName === "RIGHT CTRL");
+      const isShiftEvent = expected.shift && (keyName === "LEFT SHIFT" || keyName === "RIGHT SHIFT");
+      const isAltEvent = expected.alt && (keyName === "LEFT ALT" || keyName === "RIGHT ALT");
+      const isMetaEvent = expected.meta && (keyName === "LEFT META" || keyName === "RIGHT META");
+
+      return (isCtrlEvent || isShiftEvent || isAltEvent || isMetaEvent) && 
+             (event.state === "DOWN" || event.state === "UP");
+    }
+
+    // For modifier+key combos, check current modifier state
     const ctrlDown = !!down["LEFT CTRL"] || !!down["RIGHT CTRL"] || !!down["CTRL"] || !!down["CONTROL"];
     const shiftDown = !!down["LEFT SHIFT"] || !!down["RIGHT SHIFT"] || !!down["SHIFT"];
     const altDown = !!down["LEFT ALT"] || !!down["RIGHT ALT"] || !!down["ALT"];

@@ -35,7 +35,7 @@ export class WhisperCppProvider implements STTProvider {
     this.options = options;
     this.audioChunks = [];
     this.whisperPath = options.whisperPath || process.env.WHISPER_PATH || "whisper-cli";
-    this.modelPath = options.modelPath || process.env.WHISPER_MODEL_PATH || options.model || "models/ggml-base.en.bin";
+    this.modelPath = options.modelPath || process.env.WHISPER_MODEL_PATH || "models/ggml-base.en.bin";
     this._isConnected = true;
     this.emit({ type: "connected" });
   }

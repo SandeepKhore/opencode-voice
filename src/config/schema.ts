@@ -69,12 +69,13 @@ export interface VoiceConfig {
 export const DEFAULT_CONFIG: VoiceConfig = {
   enabled: true,
   mode: "push-to-talk",
-  hotkey: "ctrl+space",
+  hotkey: "ctrl",
   stt: {
     provider: "deepgram",
     model: "nova-3",
     language: "en",
     interimResults: true,
+    modelPath: "models/ggml-base.en.bin",
   },
   audio: {
     sampleRate: 16000,
