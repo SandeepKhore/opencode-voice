@@ -68,7 +68,7 @@ Go to **System Settings > Privacy & Security > Accessibility** and grant permiss
 opencode
 ```
 
-Hold `Ctrl+Space` to speak, release to transcribe.
+Hold `Ctrl` to speak, release to transcribe.
 
 ---
 
@@ -99,14 +99,9 @@ Hold `Ctrl+Space` to speak, release to transcribe.
 
 ## Usage
 
-### Hotkey (Push-to-Talk)
-- **Hold `Ctrl+Space`**: Start speaking
-- **Release `Ctrl+Space`**: Transcript inserts into prompt
-
-### Slash Command
-Type `/voice` in OpenCode:
-- First `/voice`: Start recording
-- Second `/voice`: Stop and transcribe
+### Push-to-Talk
+- **Hold `Ctrl`**: Start speaking
+- **Release `Ctrl`**: Transcript inserts into prompt
 
 ---
 
@@ -135,7 +130,7 @@ export DEEPGRAM_API_KEY="your-deepgram-api-key"
 | `WHISPER_MODEL_PATH` | `models/ggml-base.en.bin` | Path to GGML model |
 | `VOICE_ENABLED` | `true` | Enable/disable plugin |
 | `VOICE_MODE` | `push-to-talk` | `push-to-talk` or `toggle` |
-| `VOICE_HOTKEY` | `ctrl+space` | Hotkey combo |
+| `VOICE_HOTKEY` | `ctrl` | Hotkey combo |
 | `VOICE_AUTO_SUBMIT` | `false` | Auto-submit on finalization |
 | `VOICE_STT_MODEL` | `nova-3` | Model identifier |
 | `VOICE_STT_LANGUAGE` | `en` | Language code (en, es, fr, de) |
