@@ -92,7 +92,9 @@ export const VoiceInputPlugin: Plugin = async (ctx) => {
     await log(
       "error",
       `Failed to start hotkey listener: ${err instanceof Error ? err.message : String(err)}. ` +
-        `On macOS, ensure Accessibility permissions are granted.`,
+        (process.platform === "linux"
+          ? `On Linux, ensure you can read /dev/input (sudo usermod -aG input $USER, then log out and back in).`
+          : `On macOS, ensure Accessibility permissions are granted.`),
     );
   }
 

@@ -19,7 +19,10 @@ brew install sox whisper-cpp
 # Ubuntu / Debian
 sudo apt-get update && sudo apt-get install -y sox libsox-fmt-all
 # Install whisper.cpp from https://github.com/ggerganov/whisper.cpp
+# (build it and put `whisper-cli` on your PATH, or point WHISPER_PATH at it)
 ```
+
+On Linux, if sox is not installed the plugin falls back to `arecord` (from `alsa-utils`).
 
 ### Step 2: Download Whisper Model
 
@@ -58,9 +61,21 @@ Add to your `~/.config/opencode/opencode.json` (global) or `.opencode/opencode.j
 }
 ```
 
-### Step 5: Grant Permissions (macOS only)
+### Step 5: Grant Permissions
 
-Go to **System Settings > Privacy & Security > Accessibility** and grant permission to your terminal application.
+**macOS:** Go to **System Settings > Privacy & Security > Accessibility** and grant permission to your terminal application.
+
+**Linux (X11 and Wayland):** The global hotkey reads keyboard events from `/dev/input`, so your user must be in the `input` group:
+
+```bash
+sudo usermod -aG input $USER
+# Log out and back in (or reboot) for the group change to take effect
+groups | grep -w input   # verify
+```
+
+On an X11 session without `input` group access, the plugin falls back to an X11 key listener. Wayland sessions (the Ubuntu default) require the `input` group.
+
+> Note: membership in the `input` group lets your user's programs read all keyboard input. The plugin only checks for the configured hotkey and does not record or store keystrokes.
 
 ### Step 6: Restart OpenCode
 
@@ -153,6 +168,19 @@ export WHISPER_PATH="$(which whisper-cli)"  # Set correct path
 
 **"Microphone permission denied" (macOS)**
 System Settings > Privacy & Security > Accessibility > Enable for your terminal
+
+**Hotkey does nothing / "Cannot read keyboard devices" (Linux)**
+```bash
+sudo usermod -aG input $USER   # then log out and back in
+ls -l /dev/input/event*        # devices should be group "input"
+```
+
+**"sox could not open the microphone" (Linux)**
+```bash
+arecord -l                                   # list capture devices
+sudo apt-get install libsox-fmt-pulse        # sox support for PulseAudio/PipeWire
+rec -r 16000 -c 1 /tmp/test.wav              # quick mic test (Ctrl+C to stop)
+```
 
 **Plugin not loading**
 - Check OpenCode logs for errors

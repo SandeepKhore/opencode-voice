@@ -5,7 +5,8 @@ declare module "node-record-lpcm16" {
     sampleRate?: number;
     channels?: number;
     threshold?: number;
-    recordProgram?: string;
+    recorder?: "sox" | "rec" | "arecord";
+    device?: string;
     silence?: string;
     endOnSilence?: boolean;
     audioType?: string;

@@ -4,11 +4,16 @@
  * Listens for configurable hotkey combinations and drives the
  * voice controller in push-to-talk or toggle mode.
  *
- * Uses node-global-key-listener for cross-platform global hotkey
- * detection (requires Accessibility permissions on macOS).
+ * Uses node-global-key-listener on macOS/Windows/X11 (requires
+ * Accessibility permissions on macOS). On Linux, keyboards are read
+ * directly via evdev when accessible, which also works under Wayland.
  */
 
+import { accessSync, chmodSync, constants } from "fs";
+import { createRequire } from "module";
+import { dirname, join } from "path";
 import { GlobalKeyboardListener } from "node-global-key-listener";
+import { EvdevKeyboardListener } from "./evdev-listener";
 import type { VoiceController } from "../voice/voice-controller";
 import type { VoiceConfig } from "../config/schema";
 
@@ -27,7 +32,7 @@ export class HotkeyManager {
   private readonly config: VoiceConfig;
   private readonly controller: VoiceController;
   private readonly apiKey: string;
-  private listener: GlobalKeyboardListener | null = null;
+  private listener: GlobalKeyboardListener | EvdevKeyboardListener | null = null;
   private parsedHotkey: ParsedHotkey;
   private lastKeyTime = 0;
   private isHotkeyDown = false;
@@ -47,9 +52,9 @@ export class HotkeyManager {
    * Start listening for the configured hotkey.
    */
   async start(): Promise<void> {
-    this.listener = new GlobalKeyboardListener();
+    this.listener = createListener();
 
-    this.listener.addListener((event, down) => {
+    await this.listener.addListener((event: { name?: string; state?: string }, down: Record<string, boolean>) => {
       if (!this.matchesHotkey(event, down)) return;
 
       const now = Date.now();
@@ -151,6 +156,55 @@ export class HotkeyManager {
 
     // Check the main key
     return keyName === expected.key.toUpperCase();
+  }
+}
+
+/**
+ * Pick the keyboard listener for this platform.
+ *
+ * Linux: prefer evdev (works on X11 and Wayland). Fall back to the X11
+ * key server only on an X11 session, since under Wayland it would
+ * silently miss keys typed into native Wayland windows.
+ */
+function createListener(): GlobalKeyboardListener | EvdevKeyboardListener {
+  if (process.platform !== "linux") {
+    return new GlobalKeyboardListener();
+  }
+
+  const evdev = new EvdevKeyboardListener();
+  try {
+    evdev.start();
+    return evdev;
+  } catch (err) {
+    const isWayland =
+      process.env.XDG_SESSION_TYPE === "wayland" || !!process.env.WAYLAND_DISPLAY;
+    if (isWayland || !process.env.DISPLAY) {
+      throw err;
+    }
+  }
+
+  const serverPath = ensureX11ServerExecutable();
+  return new GlobalKeyboardListener(serverPath ? { x11: { serverPath } } : {});
+}
+
+/**
+ * The bundled X11KeyServer can lose its executable bit when installed
+ * from a git/tarball source; node-global-key-listener would then fall
+ * back to a graphical sudo prompt. Fix it ourselves when we own the file.
+ */
+function ensureX11ServerExecutable(): string | undefined {
+  try {
+    const require = createRequire(import.meta.url);
+    const pkgDir = dirname(require.resolve("node-global-key-listener/package.json"));
+    const serverPath = join(pkgDir, "bin", "X11KeyServer");
+    try {
+      accessSync(serverPath, constants.X_OK);
+    } catch {
+      chmodSync(serverPath, 0o755);
+    }
+    return serverPath;
+  } catch {
+    return undefined;
   }
 }
 

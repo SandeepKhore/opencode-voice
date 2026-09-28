@@ -94,7 +94,7 @@ export class VoiceController {
             this.recorder.start({
                 sampleRate: this.config.audio.sampleRate,
                 channels: this.config.audio.channels,
-            }, (chunk) => this.handleAudioChunk(chunk));
+            }, (chunk) => this.handleAudioChunk(chunk), (err) => this.handleError(err));
             this.transition("recording");
         }
         catch (err) {
@@ -129,7 +129,7 @@ export class VoiceController {
             this.recorder.start({
                 sampleRate: this.config.audio.sampleRate,
                 channels: this.config.audio.channels,
-            }, (chunk) => this.handleAudioChunk(chunk));
+            }, (chunk) => this.handleAudioChunk(chunk), (err) => this.handleError(err));
             this.transition("recording");
         }
         catch (err) {

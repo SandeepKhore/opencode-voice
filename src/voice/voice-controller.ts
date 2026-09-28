@@ -134,6 +134,7 @@ export class VoiceController {
           channels: this.config.audio.channels,
         },
         (chunk) => this.handleAudioChunk(chunk),
+        (err) => this.handleError(err),
       );
 
       this.transition("recording");
@@ -180,6 +181,7 @@ export class VoiceController {
           channels: this.config.audio.channels,
         },
         (chunk) => this.handleAudioChunk(chunk),
+        (err) => this.handleError(err),
       );
 
       this.transition("recording");

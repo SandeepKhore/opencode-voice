@@ -4,8 +4,9 @@
  * Listens for configurable hotkey combinations and drives the
  * voice controller in push-to-talk or toggle mode.
  *
- * Uses node-global-key-listener for cross-platform global hotkey
- * detection (requires Accessibility permissions on macOS).
+ * Uses node-global-key-listener on macOS/Windows/X11 (requires
+ * Accessibility permissions on macOS). On Linux, keyboards are read
+ * directly via evdev when accessible, which also works under Wayland.
  */
 import type { VoiceController } from "../voice/voice-controller";
 import type { VoiceConfig } from "../config/schema";
