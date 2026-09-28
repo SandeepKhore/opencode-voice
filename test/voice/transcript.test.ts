@@ -4,7 +4,7 @@
 
 import { describe, test, beforeEach } from "node:test";
 import assert from "node:assert/strict";
-import { TranscriptAggregator } from "../../src/ui/transcript";
+import { TranscriptAggregator, stripNonSpeech } from "../../src/ui/transcript";
 
 describe("TranscriptAggregator", () => {
   let aggregator: TranscriptAggregator;
@@ -133,5 +133,24 @@ describe("TranscriptAggregator", () => {
   test("hasContent is true after final", () => {
     aggregator.handleFinal("hello");
     assert.strictEqual(aggregator.hasContent, true);
+  });
+});
+
+describe("stripNonSpeech", () => {
+  test("drops transcripts that are only noise annotations", () => {
+    assert.equal(stripNonSpeech("(air whooshing)"), "");
+    assert.equal(stripNonSpeech("[BLANK_AUDIO]"), "");
+    assert.equal(stripNonSpeech(" [Music] (upbeat music) "), "");
+    assert.equal(stripNonSpeech("*coughs*"), "");
+    assert.equal(stripNonSpeech("  ...  "), "");
+  });
+
+  test("keeps real speech, removing bracketed tags", () => {
+    assert.equal(stripNonSpeech("can you hear me"), "can you hear me");
+    assert.equal(stripNonSpeech("[BLANK_AUDIO] fix the bug"), "fix the bug");
+  });
+
+  test("keeps parentheses inside dictated text", () => {
+    assert.equal(stripNonSpeech("call foo (with no args)"), "call foo (with no args)");
   });
 });

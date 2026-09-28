@@ -125,8 +125,10 @@ Example (macOS): `file:///Users/<user>/projects/opencode-voice/src/index.ts`
 ## Usage
 
 ### Push-to-Talk
-- **Hold `Ctrl`**: Start speaking
+- **Hold `Ctrl`**: Start speaking (recording begins after holding for ~0.4s)
 - **Release `Ctrl`**: Transcript inserts into prompt
+
+Regular shortcuts are ignored: tapping `Ctrl` or pressing any other key while holding it (`Ctrl+C`, `Ctrl+V`…) never starts a recording, and cancels one already in progress. Recordings shorter than 0.5s and transcripts containing only noise tags such as `(air whooshing)` or `[BLANK_AUDIO]` are discarded.
 
 ---
 

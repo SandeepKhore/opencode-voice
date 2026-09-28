@@ -12,12 +12,16 @@
  */
 import { Recorder } from "./recorder";
 import { AudioBuffer } from "./audio-buffer";
+import { stripNonSpeech } from "../ui/transcript";
 import { createSession, getFinalTranscript, } from "./voice-session";
 import { InvalidStateTransitionError, VoiceError, } from "../errors/voice-errors";
-// Valid state transitions map
 // Keep capturing briefly after release so the last word isn't clipped
 // by users letting go of the hotkey as they finish speaking.
 const STOP_TAIL_MS = 300;
+// Recordings shorter than this can't hold a meaningful instruction;
+// they're accidental presses and only yield noise transcripts.
+const MIN_RECORDING_MS = 500;
+// Valid state transitions map
 const VALID_TRANSITIONS = {
     idle: ["starting"],
     starting: ["recording", "error", "idle"],
@@ -180,6 +184,11 @@ export class VoiceController {
         if (this.session) {
             this.session.stoppedAt = Date.now();
         }
+        const bytesPerSecond = this.config.audio.sampleRate * this.config.audio.channels * 2;
+        if (this.audioBuffer.size < (bytesPerSecond * MIN_RECORDING_MS) / 1000) {
+            await this.cancel();
+            return;
+        }
         // Stop microphone first
         this.recorder.stop();
         this.transition("finalizing");
@@ -192,9 +201,9 @@ export class VoiceController {
             }
             this.transition("ready");
             // Insert transcript into OpenCode prompt
-            const transcript = this.session?.finalTranscript ?? "";
-            if (transcript.trim()) {
-                await this.opencode.insertText(transcript.trim());
+            const transcript = stripNonSpeech(this.session?.finalTranscript ?? "");
+            if (transcript) {
+                await this.opencode.insertText(transcript);
             }
         }
         catch (err) {

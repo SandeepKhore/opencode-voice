@@ -8,8 +8,11 @@
  * Accessibility permissions on macOS). On Linux, keyboards are read
  * directly via evdev when accessible, which also works under Wayland.
  */
+import { GlobalKeyboardListener } from "node-global-key-listener";
+import { EvdevKeyboardListener } from "./evdev-listener";
 import type { VoiceController } from "../voice/voice-controller";
 import type { VoiceConfig } from "../config/schema";
+type KeyboardListener = GlobalKeyboardListener | EvdevKeyboardListener;
 export declare class HotkeyManager {
     private readonly config;
     private readonly controller;
@@ -18,7 +21,11 @@ export declare class HotkeyManager {
     private parsedHotkey;
     private lastKeyTime;
     private isHotkeyDown;
-    constructor(config: VoiceConfig, controller: VoiceController, apiKey: string);
+    private holdTimer;
+    private interrupted;
+    private holdStarted;
+    private readonly listenerFactory;
+    constructor(config: VoiceConfig, controller: VoiceController, apiKey: string, listenerFactory?: () => KeyboardListener);
     /**
      * Start listening for the configured hotkey.
      */
@@ -27,9 +34,14 @@ export declare class HotkeyManager {
      * Stop listening and clean up.
      */
     stop(): Promise<void>;
+    private get isModifierOnly();
     private handleKeyDown;
     private handleKeyUp;
+    private handleInterrupt;
+    private stopRecording;
+    private clearHoldTimer;
     private handleToggle;
     private matchesHotkey;
 }
+export {};
 //# sourceMappingURL=hotkey-manager.d.ts.map

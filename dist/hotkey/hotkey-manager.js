@@ -15,6 +15,10 @@ import { GlobalKeyboardListener } from "node-global-key-listener";
 import { EvdevKeyboardListener } from "./evdev-listener";
 // Debounce threshold for rapid key presses
 const DEBOUNCE_MS = 100;
+// Modifier-only hotkeys (e.g. "ctrl") double as shortcut modifiers, so
+// push-to-talk only starts once the key has been held alone this long.
+// Quick shortcuts like Ctrl+C never reach it.
+const HOLD_DELAY_MS = 400;
 export class HotkeyManager {
     config;
     controller;
@@ -23,20 +27,33 @@ export class HotkeyManager {
     parsedHotkey;
     lastKeyTime = 0;
     isHotkeyDown = false;
-    constructor(config, controller, apiKey) {
+    holdTimer = null;
+    // Another key was pressed while a modifier-only hotkey was held
+    interrupted = false;
+    // Push-to-talk recording was started by the current hold
+    holdStarted = false;
+    listenerFactory;
+    constructor(config, controller, apiKey, listenerFactory = createListener) {
         this.config = config;
         this.controller = controller;
         this.apiKey = apiKey;
+        this.listenerFactory = listenerFactory;
         this.parsedHotkey = parseHotkey(config.hotkey);
     }
     /**
      * Start listening for the configured hotkey.
      */
     async start() {
-        this.listener = createListener();
+        this.listener = this.listenerFactory();
         await this.listener.addListener((event, down) => {
-            if (!this.matchesHotkey(event, down))
+            if (!this.matchesHotkey(event, down)) {
+                // Any other key while holding a modifier-only hotkey means the
+                // user is typing a shortcut (Ctrl+C, Ctrl+V…), not dictating.
+                if (event.state === "DOWN" && this.isHotkeyDown && this.isModifierOnly) {
+                    this.handleInterrupt();
+                }
                 return;
+            }
             const now = Date.now();
             if (event.state === "DOWN") {
                 // Debounce rapid presses
@@ -65,9 +82,30 @@ export class HotkeyManager {
             this.listener = null;
         }
         this.isHotkeyDown = false;
+        this.clearHoldTimer();
     }
     // ── Private ────────────────────────────────────────────────
+    get isModifierOnly() {
+        return !this.parsedHotkey.key;
+    }
     handleKeyDown() {
+        if (this.isModifierOnly) {
+            this.interrupted = false;
+            this.holdStarted = false;
+            if (this.config.mode === "push-to-talk") {
+                this.holdTimer = setTimeout(() => {
+                    this.holdTimer = null;
+                    if (!this.isHotkeyDown || this.interrupted)
+                        return;
+                    this.holdStarted = true;
+                    this.controller.startWithApiKey(this.apiKey).catch(() => {
+                        // Error handled by controller
+                    });
+                }, HOLD_DELAY_MS);
+            }
+            // Toggle mode acts on a clean tap — see handleKeyUp
+            return;
+        }
         if (this.config.mode === "push-to-talk") {
             // Push-to-talk: start on key down
             this.controller.startWithApiKey(this.apiKey).catch(() => {
@@ -80,13 +118,48 @@ export class HotkeyManager {
         }
     }
     handleKeyUp() {
-        if (this.config.mode === "push-to-talk") {
-            // Push-to-talk: stop on key up
-            this.controller.stop().catch(() => {
-                // Error handled by controller
-            });
+        if (this.isModifierOnly) {
+            this.clearHoldTimer();
+            if (this.config.mode === "push-to-talk") {
+                // Released before the hold delay: it was just a tap, do nothing
+                if (this.holdStarted) {
+                    this.holdStarted = false;
+                    this.stopRecording();
+                }
+            }
+            else if (!this.interrupted) {
+                this.handleToggle();
+            }
+            return;
         }
-        // Toggle mode ignores key up
+        if (this.config.mode === "push-to-talk") {
+            this.stopRecording();
+        }
+        // Toggle mode ignores key up for key combos
+    }
+    handleInterrupt() {
+        this.interrupted = true;
+        this.clearHoldTimer();
+        if (this.holdStarted) {
+            this.holdStarted = false;
+            this.controller.cancel().catch(() => { });
+        }
+    }
+    stopRecording() {
+        // stop() is a no-op while still connecting, which would leave the
+        // mic running after release — cancel instead.
+        const action = this.controller.state === "starting"
+            ? this.controller.cancel()
+            : this.controller.stop();
+        action.catch(() => {
+            // Error handled by controller
+        });
+    }
+    clearHoldTimer() {
+        if (this.holdTimer) {
+            clearTimeout(this.holdTimer);
+            this.holdTimer = null;
+        }
     }
     handleToggle() {
         const state = this.controller.state;

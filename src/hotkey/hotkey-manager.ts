@@ -20,6 +20,13 @@ import type { VoiceConfig } from "../config/schema";
 // Debounce threshold for rapid key presses
 const DEBOUNCE_MS = 100;
 
+// Modifier-only hotkeys (e.g. "ctrl") double as shortcut modifiers, so
+// push-to-talk only starts once the key has been held alone this long.
+// Quick shortcuts like Ctrl+C never reach it.
+const HOLD_DELAY_MS = 400;
+
+type KeyboardListener = GlobalKeyboardListener | EvdevKeyboardListener;
+
 interface ParsedHotkey {
   ctrl: boolean;
   shift: boolean;
@@ -32,19 +39,28 @@ export class HotkeyManager {
   private readonly config: VoiceConfig;
   private readonly controller: VoiceController;
   private readonly apiKey: string;
-  private listener: GlobalKeyboardListener | EvdevKeyboardListener | null = null;
+  private listener: KeyboardListener | null = null;
   private parsedHotkey: ParsedHotkey;
   private lastKeyTime = 0;
   private isHotkeyDown = false;
+  private holdTimer: ReturnType<typeof setTimeout> | null = null;
+  // Another key was pressed while a modifier-only hotkey was held
+  private interrupted = false;
+  // Push-to-talk recording was started by the current hold
+  private holdStarted = false;
+
+  private readonly listenerFactory: () => KeyboardListener;
 
   constructor(
     config: VoiceConfig,
     controller: VoiceController,
     apiKey: string,
+    listenerFactory: () => KeyboardListener = createListener,
   ) {
     this.config = config;
     this.controller = controller;
     this.apiKey = apiKey;
+    this.listenerFactory = listenerFactory;
     this.parsedHotkey = parseHotkey(config.hotkey);
   }
 
@@ -52,10 +68,17 @@ export class HotkeyManager {
    * Start listening for the configured hotkey.
    */
   async start(): Promise<void> {
-    this.listener = createListener();
+    this.listener = this.listenerFactory();
 
     await this.listener.addListener((event: { name?: string; state?: string }, down: Record<string, boolean>) => {
-      if (!this.matchesHotkey(event, down)) return;
+      if (!this.matchesHotkey(event, down)) {
+        // Any other key while holding a modifier-only hotkey means the
+        // user is typing a shortcut (Ctrl+C, Ctrl+V…), not dictating.
+        if (event.state === "DOWN" && this.isHotkeyDown && this.isModifierOnly) {
+          this.handleInterrupt();
+        }
+        return;
+      }
 
       const now = Date.now();
 
@@ -86,11 +109,34 @@ export class HotkeyManager {
       this.listener = null;
     }
     this.isHotkeyDown = false;
+    this.clearHoldTimer();
   }
 
   // ── Private ────────────────────────────────────────────────
 
+  private get isModifierOnly(): boolean {
+    return !this.parsedHotkey.key;
+  }
+
   private handleKeyDown(): void {
+    if (this.isModifierOnly) {
+      this.interrupted = false;
+      this.holdStarted = false;
+
+      if (this.config.mode === "push-to-talk") {
+        this.holdTimer = setTimeout(() => {
+          this.holdTimer = null;
+          if (!this.isHotkeyDown || this.interrupted) return;
+          this.holdStarted = true;
+          this.controller.startWithApiKey(this.apiKey).catch(() => {
+            // Error handled by controller
+          });
+        }, HOLD_DELAY_MS);
+      }
+      // Toggle mode acts on a clean tap — see handleKeyUp
+      return;
+    }
+
     if (this.config.mode === "push-to-talk") {
       // Push-to-talk: start on key down
       this.controller.startWithApiKey(this.apiKey).catch(() => {
@@ -103,13 +149,54 @@ export class HotkeyManager {
   }
 
   private handleKeyUp(): void {
-    if (this.config.mode === "push-to-talk") {
-      // Push-to-talk: stop on key up
-      this.controller.stop().catch(() => {
-        // Error handled by controller
-      });
+    if (this.isModifierOnly) {
+      this.clearHoldTimer();
+
+      if (this.config.mode === "push-to-talk") {
+        // Released before the hold delay: it was just a tap, do nothing
+        if (this.holdStarted) {
+          this.holdStarted = false;
+          this.stopRecording();
+        }
+      } else if (!this.interrupted) {
+        this.handleToggle();
+      }
+      return;
     }
-    // Toggle mode ignores key up
+
+    if (this.config.mode === "push-to-talk") {
+      this.stopRecording();
+    }
+    // Toggle mode ignores key up for key combos
+  }
+
+  private handleInterrupt(): void {
+    this.interrupted = true;
+    this.clearHoldTimer();
+
+    if (this.holdStarted) {
+      this.holdStarted = false;
+      this.controller.cancel().catch(() => {});
+    }
+  }
+
+  private stopRecording(): void {
+    // stop() is a no-op while still connecting, which would leave the
+    // mic running after release — cancel instead.
+    const action =
+      this.controller.state === "starting"
+        ? this.controller.cancel()
+        : this.controller.stop();
+    action.catch(() => {
+      // Error handled by controller
+    });
+  }
+
+  private clearHoldTimer(): void {
+    if (this.holdTimer) {
+      clearTimeout(this.holdTimer);
+      this.holdTimer = null;
+    }
   }
 
   private handleToggle(): void {
@@ -166,7 +253,7 @@ export class HotkeyManager {
  * key server only on an X11 session, since under Wayland it would
  * silently miss keys typed into native Wayland windows.
  */
-function createListener(): GlobalKeyboardListener | EvdevKeyboardListener {
+function createListener(): KeyboardListener {
   if (process.platform !== "linux") {
     return new GlobalKeyboardListener();
   }

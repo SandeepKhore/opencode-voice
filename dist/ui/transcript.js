@@ -60,4 +60,21 @@ export class TranscriptAggregator {
         this.currentInterim = "";
     }
 }
+/**
+ * Remove non-speech annotations that STT engines emit for noise or
+ * silence, e.g. "[BLANK_AUDIO]", "(air whooshing)", "*music*".
+ *
+ * Bracketed tags are always removed (they never represent speech).
+ * Parenthesized/starred segments are only dropped when the transcript
+ * has nothing else in it, so dictated text containing parentheses
+ * survives. Returns "" when no speech remains.
+ */
+export function stripNonSpeech(text) {
+    const withoutTags = text.replace(/\[[^\]]*\]/g, " ").replace(/\s+/g, " ").trim();
+    const withoutAnnotations = withoutTags.replace(/\([^)]*\)|\*[^*]*\*/g, " ");
+    if (!/[\p{L}\p{N}]/u.test(withoutAnnotations)) {
+        return "";
+    }
+    return withoutTags;
+}
 //# sourceMappingURL=transcript.js.map
