@@ -1,9 +1,9 @@
 /**
  * Microphone recorder.
  *
- * Captures audio from the system microphone using sox via
- * node-record-lpcm16 (falling back to ALSA's arecord on Linux when
- * sox is not installed). Emits audio chunks as a readable stream.
+ * Captures audio from the system microphone via node-record-lpcm16,
+ * using ALSA's arecord on Linux and sox elsewhere (or as a fallback).
+ * Emits audio chunks as a readable stream.
  *
  * Audio flows:
  *   Microphone → sox/arecord subprocess → PCM chunks → callback
@@ -109,7 +109,7 @@ export class Recorder {
         } else if (lower.includes("has exited with error code")) {
           error = new MicrophoneUnavailableError(
             `${recorder} could not open the microphone. Check that an input device is available` +
-              (process.platform === "linux" ? " (try: arecord -l, or install libsox-fmt-pulse)" : "") +
+              (process.platform === "linux" ? " (try: arecord -l)" : "") +
               `. Run with DEBUG=record for details.`,
           );
         } else {
@@ -177,12 +177,16 @@ export class Recorder {
 }
 
 /**
- * Pick the recording program: sox everywhere, arecord (alsa-utils,
- * preinstalled on most Linux desktops) as a Linux fallback.
+ * Pick the recording program.
+ *
+ * Linux prefers arecord (alsa-utils, preinstalled on most desktops):
+ * sox's default driver there is PulseAudio, which takes ~2s to deliver
+ * the first audio — long enough to swallow a short push-to-talk phrase.
+ * arecord goes through ALSA and starts in well under 200ms.
  */
 function pickRecorder(): "sox" | "arecord" | null {
-  if (commandExists("sox")) return "sox";
   if (process.platform === "linux" && commandExists("arecord")) return "arecord";
+  if (commandExists("sox")) return "sox";
   return null;
 }
 

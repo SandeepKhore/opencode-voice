@@ -1,9 +1,9 @@
 /**
  * Microphone recorder.
  *
- * Captures audio from the system microphone using sox via
- * node-record-lpcm16 (falling back to ALSA's arecord on Linux when
- * sox is not installed). Emits audio chunks as a readable stream.
+ * Captures audio from the system microphone via node-record-lpcm16,
+ * using ALSA's arecord on Linux and sox elsewhere (or as a fallback).
+ * Emits audio chunks as a readable stream.
  *
  * Audio flows:
  *   Microphone → sox/arecord subprocess → PCM chunks → callback

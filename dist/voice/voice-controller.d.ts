@@ -20,6 +20,7 @@ export declare class VoiceController {
     private readonly opencode;
     private readonly config;
     private readonly recorder;
+    private stopping;
     private readonly audioBuffer;
     private session;
     private sttUnsubscribe;

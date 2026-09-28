@@ -29,6 +29,10 @@ import {
 } from "../errors/voice-errors";
 
 // Valid state transitions map
+// Keep capturing briefly after release so the last word isn't clipped
+// by users letting go of the hotkey as they finish speaking.
+const STOP_TAIL_MS = 300;
+
 const VALID_TRANSITIONS: Record<VoiceState, VoiceState[]> = {
   idle: ["starting"],
   starting: ["recording", "error", "idle"],
@@ -48,6 +52,7 @@ export class VoiceController {
   private readonly opencode: OpenCodeInput;
   private readonly config: VoiceConfig;
   private readonly recorder: Recorder;
+  private stopping = false;
   private readonly audioBuffer: AudioBuffer;
 
   private session: VoiceSession | null = null;
@@ -212,7 +217,18 @@ export class VoiceController {
    * Flow: RECORDING → FINALIZING → wait for final → READY → insert → IDLE
    */
   async stop(): Promise<void> {
-    if (this.state !== "recording") {
+    if (this.state !== "recording" || this.stopping) {
+      return;
+    }
+
+    this.stopping = true;
+    try {
+      await new Promise((resolve) => setTimeout(resolve, STOP_TAIL_MS));
+    } finally {
+      this.stopping = false;
+    }
+    // Cancelled or errored during the tail
+    if ((this.state as VoiceState) !== "recording") {
       return;
     }
 
