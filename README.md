@@ -104,11 +104,21 @@ Hold `Ctrl` to speak, release to transcribe.
 ```
 
 ### Local development
+
+Clone the repo, run `npm install`, and point OpenCode at the entry file using an absolute `file://` URL:
+
 ```json
 {
-  "plugin": ["./path/to/opencode-voice"]
+  "plugin": ["file:///absolute/path/to/opencode-voice/src/index.ts"]
 }
 ```
+
+- Use the full absolute path (no `~`, no relative paths).
+- Point at the entry file (`src/index.ts`), not the folder. OpenCode runs TypeScript directly, so no build step is needed and edits take effect after restarting OpenCode.
+- To use the compiled output instead, run `npm run build` and point at `dist/index.js`.
+
+Example (Linux): `file:///home/<user>/projects/opencode-voice/src/index.ts`
+Example (macOS): `file:///Users/<user>/projects/opencode-voice/src/index.ts`
 
 ---
 
