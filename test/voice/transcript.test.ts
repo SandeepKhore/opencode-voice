@@ -50,7 +50,7 @@ describe("TranscriptAggregator", () => {
   });
 
   test("partial + final prevents duplication", () => {
-    // Simulate Deepgram streaming:
+    // Simulate STT streaming:
     // partial: "Create"
     // partial: "Create an endpoint"
     // partial: "Create an endpoint that"

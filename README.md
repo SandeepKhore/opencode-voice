@@ -2,7 +2,7 @@
 
 Speak your coding instructions directly into OpenCode.
 
-`opencode-voice` is a voice-input plugin for OpenCode. It captures audio from your microphone, transcribes it using Deepgram (cloud) or Whisper.cpp (local), and inserts the transcript into your prompt.
+`opencode-voice` is a voice-input plugin for OpenCode. It captures audio from your microphone, transcribes it locally with Whisper.cpp (no API key, no cloud), and inserts the transcript into your prompt.
 
 ---
 
@@ -36,14 +36,9 @@ curl -L -o ~/.config/opencode/models/ggml-base.en.bin https://huggingface.co/gge
 Add these to your shell profile (`~/.zshrc`, `~/.bashrc`, or `~/.profile`):
 
 ```bash
-# Voice plugin - use local Whisper (no API key needed)
-export VOICE_STT_PROVIDER="whispercpp"
+# Voice plugin - local Whisper (no API key needed)
 export WHISPER_PATH="whisper-cli"
 export WHISPER_MODEL_PATH="$HOME/.config/opencode/models/ggml-base.en.bin"
-
-# OR use Deepgram cloud STT (requires API key)
-# export VOICE_STT_PROVIDER="deepgram"
-# export DEEPGRAM_API_KEY="your-deepgram-api-key"
 ```
 
 Then reload your shell:
@@ -105,20 +100,24 @@ Hold `Ctrl` to speak, release to transcribe.
 
 ### Local development
 
-Clone the repo, run `npm install`, and point OpenCode at the entry file using an absolute `file://` URL:
+On OpenCode v1 the `plugin` array only accepts npm specs — `file://` or
+`@file://` entries fail with `Could not read package.json`. Load a local
+checkout via a one-line shim in the global plugins directory instead:
 
-```json
-{
-  "plugin": ["file:///absolute/path/to/opencode-voice/src/index.ts"]
-}
+```bash
+cat > ~/.config/opencode/plugins/opencode-voice-local.ts <<'EOF'
+// ponytail: shim to local dev copy; swap for npm spec when published
+export { default, VoiceInputPlugin } from "/absolute/path/to/opencode-voice/src/index.ts";
+EOF
 ```
 
 - Use the full absolute path (no `~`, no relative paths).
-- Point at the entry file (`src/index.ts`), not the folder. OpenCode runs TypeScript directly, so no build step is needed and edits take effect after restarting OpenCode.
-- To use the compiled output instead, run `npm run build` and point at `dist/index.js`.
-
-Example (Linux): `file:///home/<user>/projects/opencode-voice/src/index.ts`
-Example (macOS): `file:///Users/<user>/projects/opencode-voice/src/index.ts`
+- Point at the entry file (`src/index.ts`), not the folder. Deps resolve
+  from the checkout's own `node_modules` (run `npm install` there first),
+  so no build step is needed and edits take effect after restarting OpenCode.
+- Do NOT add anything to the `plugin` array for this — files under
+  `~/.config/opencode/plugins/` autoload at startup.
+- Example: `/home/<user>/projects/opencode-voice/src/index.ts`
 
 ---
 
@@ -132,18 +131,10 @@ Regular shortcuts are ignored: tapping `Ctrl` or pressing any other key while ho
 
 ---
 
-## Speech-to-Text Providers
+## Speech-to-Text
 
-### Option 1: Whisper.cpp (Local — Default, No API Key)
-Requires: `whisper-cpp` installed, model downloaded, environment variables set (see Quick Setup).
-
-### Option 2: Deepgram (Cloud)
-Requires: Deepgram API key.
-
-```bash
-export VOICE_STT_PROVIDER="deepgram"
-export DEEPGRAM_API_KEY="your-deepgram-api-key"
-```
+Whisper.cpp (local, offline — the only provider). Requires: `whisper-cpp`
+installed, model downloaded, environment variables set (see Quick Setup).
 
 ---
 
@@ -151,15 +142,13 @@ export DEEPGRAM_API_KEY="your-deepgram-api-key"
 
 | Variable | Default | Description |
 |----------|---------|-------------|
-| `VOICE_STT_PROVIDER` | `deepgram` | `deepgram` or `whispercpp` |
-| `DEEPGRAM_API_KEY` | — | Deepgram API key (required for deepgram) |
 | `WHISPER_PATH` | `whisper-cli` | Path to whisper-cli binary |
 | `WHISPER_MODEL_PATH` | `models/ggml-base.en.bin` | Path to GGML model |
 | `VOICE_ENABLED` | `true` | Enable/disable plugin |
 | `VOICE_MODE` | `push-to-talk` | `push-to-talk` or `toggle` |
 | `VOICE_HOTKEY` | `ctrl` | Hotkey combo |
 | `VOICE_AUTO_SUBMIT` | `false` | Auto-submit on finalization |
-| `VOICE_STT_MODEL` | `nova-3` | Model identifier |
+| `VOICE_STT_MODEL` | `base.en` | Model identifier |
 | `VOICE_STT_LANGUAGE` | `en` | Language code (en, es, fr, de) |
 
 ---
@@ -196,7 +185,7 @@ rec -r 16000 -c 1 /tmp/test.wav              # quick mic test (Ctrl+C to stop)
 
 **Plugin not loading**
 - Check OpenCode logs for errors
-- Ensure environment variables are set: `echo $VOICE_STT_PROVIDER`
+- Ensure Whisper env vars are set: `echo $WHISPER_PATH $WHISPER_MODEL_PATH`
 - Verify model exists: `ls -la ~/.config/opencode/models/ggml-base.en.bin`
 
 ---

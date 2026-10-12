@@ -2,17 +2,16 @@
  * Configuration loader.
  *
  * Merges defaults with environment variable overrides.
- * API keys are loaded exclusively from environment variables
- * — never from project config files.
+ * Local-only: no API keys — transcription runs offline via whisper.cpp.
  */
 
-import { DEFAULT_CONFIG, type VoiceConfig, type VoiceMode, type STTProviderName } from "./schema";
+import { DEFAULT_CONFIG, type VoiceConfig, type VoiceMode } from "./schema";
 
 export interface ResolvedConfig {
   /** Fully resolved voice configuration. */
   readonly voice: VoiceConfig;
 
-  /** STT API key (from environment). */
+  /** STT credential. Always "local" — kept for the provider call signature. */
   readonly apiKey: string;
 }
 
@@ -23,24 +22,13 @@ export interface ResolvedConfig {
  * 1. Environment variables (highest)
  * 2. Explicit overrides parameter
  * 3. Defaults (lowest)
- *
- * @throws {Error} If DEEPGRAM_API_KEY is missing and the plugin is enabled.
  */
 export function loadConfig(
   overrides: Partial<VoiceConfig> = {},
 ): ResolvedConfig {
   const voice = mergeConfig(DEFAULT_CONFIG, overrides, readEnvOverrides());
 
-  const apiKey = resolveApiKey(voice.stt.provider);
-
-  if (voice.enabled && !apiKey) {
-    throw new Error(
-      `Voice plugin enabled but ${getApiKeyEnvVar(voice.stt.provider)} is not set. ` +
-        `Set the environment variable or disable the plugin.`,
-    );
-  }
-
-  return { voice, apiKey };
+  return { voice, apiKey: "local" };
 }
 
 // ── Internal helpers ───────────────────────────────────────────
@@ -60,12 +48,6 @@ function readEnvOverrides(): Partial<VoiceConfig> {
   }
   if (env.VOICE_AUTO_SUBMIT !== undefined) {
     overrides.autoSubmit = env.VOICE_AUTO_SUBMIT === "true";
-  }
-  if (env.VOICE_STT_PROVIDER !== undefined) {
-    overrides.stt = {
-      ...DEFAULT_CONFIG.stt,
-      provider: env.VOICE_STT_PROVIDER as STTProviderName,
-    };
   }
   if (env.VOICE_STT_MODEL !== undefined) {
     overrides.stt = {
@@ -116,23 +98,4 @@ function mergeConfig(
   }
 
   return result;
-}
-
-function getApiKeyEnvVar(provider: STTProviderName): string {
-  switch (provider) {
-    case "deepgram":
-      return "DEEPGRAM_API_KEY";
-    case "whispercpp":
-      return "";
-    default:
-      return `${String(provider).toUpperCase()}_API_KEY`;
-  }
-}
-
-function resolveApiKey(provider: STTProviderName): string {
-  if (provider === "whispercpp") {
-    return "local"; // Local provider does not require a cloud API key
-  }
-  const envVar = getApiKeyEnvVar(provider);
-  return envVar ? process.env[envVar] ?? "" : "local";
 }

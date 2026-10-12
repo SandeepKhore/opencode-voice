@@ -16,13 +16,10 @@ describe("loadConfig", () => {
     delete process.env.VOICE_MODE;
     delete process.env.VOICE_HOTKEY;
     delete process.env.VOICE_AUTO_SUBMIT;
-    delete process.env.VOICE_STT_PROVIDER;
     delete process.env.VOICE_STT_MODEL;
     delete process.env.VOICE_STT_LANGUAGE;
     delete process.env.WHISPER_PATH;
     delete process.env.WHISPER_MODEL_PATH;
-    // Set required API key for most tests
-    process.env.DEEPGRAM_API_KEY = "test-api-key";
   });
 
   afterEach(() => {
@@ -33,7 +30,7 @@ describe("loadConfig", () => {
   test("returns defaults when no overrides provided", () => {
     const config = loadConfig();
     assert.deepStrictEqual(config.voice, DEFAULT_CONFIG);
-    assert.strictEqual(config.apiKey, "test-api-key");
+    assert.strictEqual(config.apiKey, "local");
   });
 
   test("merges explicit overrides with defaults", () => {
@@ -41,7 +38,6 @@ describe("loadConfig", () => {
     assert.strictEqual(config.voice.mode, "toggle");
     assert.strictEqual(config.voice.hotkey, "cmd+shift+v");
     // Other fields unchanged
-    assert.strictEqual(config.voice.stt.provider, "deepgram");
     assert.strictEqual(config.voice.audio.sampleRate, 16000);
   });
 
@@ -56,38 +52,30 @@ describe("loadConfig", () => {
     assert.strictEqual(config.voice.autoSubmit, true);
   });
 
-  test("throws when API key is missing and plugin is enabled", () => {
-    delete process.env.DEEPGRAM_API_KEY;
-
-    assert.throws(
-      () => loadConfig(),
-      { message: /DEEPGRAM_API_KEY/ }
-    );
+  test("needs no API key (local-only transcription)", () => {
+    const config = loadConfig();
+    assert.strictEqual(config.apiKey, "local");
   });
 
-  test("does not throw when API key is missing but plugin is disabled", () => {
-    delete process.env.DEEPGRAM_API_KEY;
-
+  test("disabled plugin still resolves local config", () => {
     const config = loadConfig({ enabled: false });
     assert.strictEqual(config.voice.enabled, false);
-    assert.strictEqual(config.apiKey, "");
+    assert.strictEqual(config.apiKey, "local");
   });
 
   test("env VOICE_ENABLED=false disables plugin", () => {
     process.env.VOICE_ENABLED = "false";
-    delete process.env.DEEPGRAM_API_KEY;
 
     const config = loadConfig();
     assert.strictEqual(config.voice.enabled, false);
   });
 
   test("STT model override via environment", () => {
-    process.env.VOICE_STT_MODEL = "nova-2";
+    process.env.VOICE_STT_MODEL = "small.en";
 
     const config = loadConfig();
-    assert.strictEqual(config.voice.stt.model, "nova-2");
+    assert.strictEqual(config.voice.stt.model, "small.en");
     // Other STT fields unchanged
-    assert.strictEqual(config.voice.stt.provider, "deepgram");
     assert.strictEqual(config.voice.stt.language, "en");
   });
 
