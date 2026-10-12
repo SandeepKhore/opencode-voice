@@ -2,14 +2,13 @@
  * Configuration loader.
  *
  * Merges defaults with environment variable overrides.
- * API keys are loaded exclusively from environment variables
- * — never from project config files.
+ * Local-only: no API keys — transcription runs offline via whisper.cpp.
  */
 import { type VoiceConfig } from "./schema";
 export interface ResolvedConfig {
     /** Fully resolved voice configuration. */
     readonly voice: VoiceConfig;
-    /** STT API key (from environment). */
+    /** STT credential. Always "local" — kept for the provider call signature. */
     readonly apiKey: string;
 }
 /**
@@ -19,8 +18,6 @@ export interface ResolvedConfig {
  * 1. Environment variables (highest)
  * 2. Explicit overrides parameter
  * 3. Defaults (lowest)
- *
- * @throws {Error} If DEEPGRAM_API_KEY is missing and the plugin is enabled.
  */
 export declare function loadConfig(overrides?: Partial<VoiceConfig>): ResolvedConfig;
 //# sourceMappingURL=loader.d.ts.map

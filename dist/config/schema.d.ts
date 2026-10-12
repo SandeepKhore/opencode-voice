@@ -6,23 +6,20 @@
  * minimal.
  */
 export type VoiceMode = "push-to-talk" | "toggle";
-export type STTProviderName = "deepgram" | "whispercpp";
 export interface STTConfig {
-    /** Which provider to use: "deepgram" or "whispercpp". */
-    readonly provider: STTProviderName;
-    /** Provider model identifier (or GGML model name for Whisper). */
+    /** GGML model name for local Whisper inference. */
     readonly model: string;
     /** BCP-47 language code. */
     readonly language: string;
     /** Whether to receive interim (partial) transcription results. */
     readonly interimResults: boolean;
-    /** Path to whisper-cli / main binary when provider is "whispercpp". */
+    /** Path to whisper-cli / main binary. */
     readonly whisperPath?: string;
-    /** Path to GGML model .bin file when provider is "whispercpp". */
+    /** Path to GGML model .bin file. */
     readonly modelPath?: string;
 }
 export interface AudioConfig {
-    /** Sample rate in Hz (Deepgram prefers 16000). */
+    /** Sample rate in Hz (whisper.cpp uses 16000). */
     readonly sampleRate: number;
     /** Number of audio channels (1 = mono). */
     readonly channels: number;

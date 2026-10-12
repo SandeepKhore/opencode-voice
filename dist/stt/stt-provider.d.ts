@@ -3,12 +3,12 @@
  *
  * This is the abstraction boundary — VoiceController and all other
  * modules interact with STT exclusively through this interface.
- * No Deepgram/Whisper/Azure specifics leak beyond the provider
+ * No provider specifics leak beyond the provider
  * implementations.
  */
 import type { STTEvent } from "./stt-events";
 export interface STTOptions {
-    /** Provider model identifier (e.g. "nova-3"). */
+    /** Provider model identifier (e.g. "base.en"). */
     readonly model: string;
     /** BCP-47 language code (e.g. "en"). */
     readonly language: string;

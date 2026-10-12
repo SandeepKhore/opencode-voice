@@ -8,6 +8,8 @@ Speak your coding instructions directly into OpenCode.
 
 ## Quick Setup (Agent Instructions)
 
+Requires OpenCode V2 (`opencode --version` shows 2.x).
+
 Run these commands to set up the voice plugin end-to-end:
 
 ### Step 1: Install Prerequisites
@@ -52,7 +54,7 @@ Add to your `~/.config/opencode/opencode.json` (global) or `.opencode/opencode.j
 
 ```json
 {
-  "plugin": ["github:sandeepkhore/opencode-voice#main"]
+  "plugins": ["github:sandeepkhore/opencode-voice#main"]
 }
 ```
 
@@ -80,6 +82,16 @@ opencode
 
 Hold `Ctrl` to speak, release to transcribe.
 
+### Step 7: Verify It Loaded
+
+```bash
+opencode service status
+rg -n "failed to load plugin.*voice" ~/.local/share/opencode/log/opencode.log | tail -n 5
+```
+
+The grep must print nothing. Any match means the plugin failed to load —
+see "Plugin not loading" below.
+
 ---
 
 ## Installation Options
@@ -87,22 +99,21 @@ Hold `Ctrl` to speak, release to transcribe.
 ### From GitHub (recommended)
 ```json
 {
-  "plugin": ["github:sandeepkhore/opencode-voice#main"]
+  "plugins": ["github:sandeepkhore/opencode-voice#main"]
 }
 ```
 
 ### From npm (when published)
 ```json
 {
-  "plugin": ["opencode-voice"]
+  "plugins": ["opencode-voice"]
 }
 ```
 
 ### Local development
 
-On OpenCode v1 the `plugin` array only accepts npm specs — `file://` or
-`@file://` entries fail with `Could not read package.json`. Load a local
-checkout via a one-line shim in the global plugins directory instead:
+Load a local checkout via a one-line shim in the global plugins directory
+(files there autoload at startup — no `plugins` entry needed):
 
 ```bash
 cat > ~/.config/opencode/plugins/opencode-voice-local.ts <<'EOF'

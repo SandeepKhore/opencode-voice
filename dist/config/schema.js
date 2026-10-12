@@ -10,8 +10,7 @@ export const DEFAULT_CONFIG = {
     mode: "push-to-talk",
     hotkey: "ctrl",
     stt: {
-        provider: "deepgram",
-        model: "nova-3",
+        model: "base.en",
         language: "en",
         interimResults: true,
         modelPath: "models/ggml-base.en.bin",
