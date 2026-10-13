@@ -15,6 +15,7 @@
 import { loadConfig } from "./config/loader";
 import { WhisperCppProvider } from "./stt/whispercpp-provider";
 import type { OpenCodeInput } from "./opencode/integration";
+import { VoiceRpc } from "./rpc";
 import { VoiceController } from "./voice/voice-controller";
 import { HotkeyManager } from "./hotkey/hotkey-manager";
 import { VoiceRenderer } from "./ui/renderer";
@@ -41,13 +42,29 @@ async function setup(ctx: any) {
     return;
   }
 
-  // Transcript is captured here so the tool can return it to the agent.
-  // shortcut: server logs transcripts instead of inserting into the TUI prompt; move insertion to the TUI plugin when it needs them.
+  // Transcript is captured here so the tool can return it to the agent, and
+  // emitted as an RPC event so the TUI plugin can offer it for review — the
+  // server has no API for inserting text into the prompt draft.
   let lastTranscript = "";
+  let emitTranscript: ((text: string) => Promise<void>) | null = null;
+  let disposeRpc: (() => Promise<void>) | null = null;
+  try {
+    const registration = await ctx.rpc.register(VoiceRpc, {});
+    emitTranscript = async (text: string): Promise<void> => {
+      await registration.events.emit("transcript", { text });
+    };
+    disposeRpc = () => registration.dispose();
+  } catch (err) {
+    log("warn", `Voice transcript events unavailable: ${err instanceof Error ? err.message : String(err)}`);
+  }
   const opencodeInput: OpenCodeInput = {
     insertText: async (text: string): Promise<void> => {
       lastTranscript = text;
-      if (text.trim()) log("info", `Transcript: ${text}`);
+      if (!text.trim()) return;
+      log("info", `Transcript: ${text}`);
+      await emitTranscript?.(text).catch((err) =>
+        log("warn", `Transcript event not delivered: ${err instanceof Error ? err.message : String(err)}`),
+      );
     },
     showToast: async (message: string): Promise<void> => {
       log("info", message);
@@ -95,7 +112,7 @@ async function setup(ctx: any) {
     await ctx.tool.transform((editor: any) => {
       editor.add({
         name: "voice",
-        description: "Start or stop voice input recording (/voice)",
+        description: "Start or stop voice input recording",
         input: {
           type: "object",
           properties: {},
@@ -132,6 +149,7 @@ async function setup(ctx: any) {
     aborter?.abort();
     renderer.stop();
     hotkeys.stop().catch(() => {});
+    disposeRpc?.().catch(() => {});
   };
 }
 

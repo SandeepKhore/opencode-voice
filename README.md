@@ -112,13 +112,19 @@ see "Plugin not loading" below.
 
 ### Local development
 
-Load a local checkout via a one-line shim in the global plugins directory
-(files there autoload at startup — no `plugins` entry needed):
+Load a local checkout via shims in the global plugins directory
+(files there autoload at startup — no `plugins` entry needed).
+The server entry and the TUI entry (transcript review dialog) load separately:
 
 ```bash
-cat > ~/.config/opencode/plugins/opencode-voice-local.ts <<'EOF'
+mkdir -p ~/.config/opencode/plugins/opencode-voice-local
+cat > ~/.config/opencode/plugins/opencode-voice-local/index.ts <<'EOF'
 // ponytail: shim to local dev copy; swap for npm spec when published
 export { default, VoiceInputPlugin } from "/absolute/path/to/opencode-voice/src/index.ts";
+EOF
+cat > ~/.config/opencode/plugins/opencode-voice-local/tui.ts <<'EOF'
+// ponytail: shim to local dev copy; swap for npm spec when published
+export { default } from "/absolute/path/to/opencode-voice/src/tui.ts";
 EOF
 ```
 
@@ -136,9 +142,9 @@ EOF
 
 ### Push-to-Talk
 - **Hold `Ctrl`**: Start speaking (recording begins after holding for ~0.4s)
-- **Release `Ctrl`**: Transcript inserts into prompt
+- **Release `Ctrl`**: The review dialog opens with the transcript — confirm to send it to the active session, or press Esc to dismiss (run `/voice-paste` later to bring it back)
 
-Regular shortcuts are ignored: tapping `Ctrl` or pressing any other key while holding it (`Ctrl+C`, `Ctrl+V`…) never starts a recording, and cancels one already in progress. Recordings shorter than 0.5s and transcripts containing only noise tags such as `(air whooshing)` or `[BLANK_AUDIO]` are discarded.
+With several windows open, every loaded location records the same audio, but each window only keeps its own location's transcript. Regular shortcuts are ignored: tapping `Ctrl` or pressing any other key while holding it (`Ctrl+C`, `Ctrl+V`…) never starts a recording, and cancels one already in progress. Recordings shorter than 0.5s and transcripts containing only noise tags such as `(air whooshing)` or `[BLANK_AUDIO]` are discarded.
 
 ---
 

@@ -10,6 +10,12 @@
     },
     "./server": {
       "import": "./src/index.ts"
+    },
+    "./rpc": {
+      "import": "./src/rpc.ts"
+    },
+    "./tui": {
+      "import": "./src/tui.ts"
     }
   },
   "files": [
@@ -23,11 +29,13 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
+    "@opencode/plugin": "^2.0.27",
     "node-global-key-listener": "^0.3.0",
     "node-record-lpcm16": "^1.0.1"
   },
   "devDependencies": {
     "@types/node": "^26.4.1",
+    "solid-js": "^1.9.17",
     "tsx": "^4.7.0",
     "typescript": "^5.5.0"
   },
